@@ -1,4 +1,4 @@
-package week11.st830661.petpal.login
+package week11.st830661.petpal.view.login
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
