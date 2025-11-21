@@ -30,9 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import week11.st830661.petpal.login.LoginScreen
+import week11.st830661.petpal.view.login.LoginScreen
 import week11.st830661.petpal.ui.theme.PetPalTheme
 import week11.st830661.petpal.screens.DashboardScreen
 import week11.st830661.petpal.screens.PetsScreen
