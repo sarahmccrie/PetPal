@@ -1,12 +1,19 @@
 package week11.st830661.petpal.view.login
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import week11.st830661.petpal.viewmodel.LoginViewModel
 
 @Composable
@@ -21,23 +28,43 @@ fun ForgotPasswordScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
+            .background(Color(0xFFF6FFF5))
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Reset Password", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(64.dp))
+
+        // Title
+        Text(
+            text = "Reset Password",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            label = { Text("Email") },
+            placeholder = { Text("Email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color(0xFFE9F6EC),
+                unfocusedContainerColor = Color(0xFFE9F6EC),
+                disabledContainerColor = Color(0xFFE9F6EC),
+                errorContainerColor = Color(0xFFE9F6EC),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                errorIndicatorColor = Color.Transparent,
+            )
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
+        // Messages
         state.errorMessage?.let {
             Text(
                 it,
@@ -55,27 +82,39 @@ fun ForgotPasswordScreen(
             Spacer(Modifier.height(8.dp))
         }
 
+        // Green button
         Button(
             onClick = { viewModel.sendPasswordReset() },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            enabled = !state.isLoading
+                .height(52.dp),
+            enabled = !state.isLoading,
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF20C997),
+                contentColor = Color.White
+            )
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
+                    color = Color.White
                 )
             } else {
-                Text("Send Reset Email")
+                Text("Send Reset Email", fontWeight = FontWeight.SemiBold)
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
-        TextButton(onClick = onNavigateBack) {
-            Text("Back to login")
-        }
+        Text(
+            text = "Back to login",
+            modifier = Modifier
+                .padding(bottom = 24.dp)
+                .clickable { onNavigateBack() },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }

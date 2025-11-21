@@ -72,7 +72,7 @@ fun DashboardScreen(
                     text = "Logout",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFFCC0000),
+                    color = Color(0xFF00CCC5),
                     modifier = Modifier
                         .clickable { onLogout() }
                         .padding(start = 8.dp)
