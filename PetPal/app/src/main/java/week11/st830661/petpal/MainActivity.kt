@@ -200,7 +200,9 @@ fun MainScreen(
                     onAppointmentClick = { selectedAppointment = it },
                     onLogout = onLogout
                 )
-                NavItem.Pets -> PetsScreen()
+                NavItem.Pets -> PetsScreen(
+                    uid = uid
+                )
                 NavItem.Health -> HealthScreen()
                 NavItem.Reminders -> RemindersScreen(
                     reminders = reminders,
