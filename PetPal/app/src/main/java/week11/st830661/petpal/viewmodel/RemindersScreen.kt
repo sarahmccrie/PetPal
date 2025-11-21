@@ -1,4 +1,4 @@
-package week11.st830661.petpal.screens
+package week11.st830661.petpal.viewmodel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,14 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -49,13 +47,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
 import week11.st830661.petpal.data.models.ReminderType
 import week11.st830661.petpal.data.models.RecurrencePattern
 import week11.st830661.petpal.data.models.AppointmentType
-import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -365,7 +363,7 @@ fun AddReminderDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
             modifier = Modifier
@@ -604,7 +602,7 @@ fun AddAppointmentDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
             modifier = Modifier

@@ -1,4 +1,4 @@
-package week11.st830661.petpal.screens
+package week11.st830661.petpal.viewmodel
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,6 @@ import androidx.compose.ui.unit.sp
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -370,7 +370,7 @@ fun ReminderDetailScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = errorMessage,
-                        color = androidx.compose.ui.graphics.Color.Red,
+                        color = Color.Red,
                         fontSize = 12.sp
                     )
                 }

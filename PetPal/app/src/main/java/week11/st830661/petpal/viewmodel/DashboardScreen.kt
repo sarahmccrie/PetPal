@@ -1,4 +1,4 @@
-package week11.st830661.petpal.screens
+package week11.st830661.petpal.viewmodel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,10 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,11 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
 import week11.st830661.petpal.data.models.AppointmentType
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun DashboardScreen(
@@ -67,7 +65,7 @@ fun DashboardScreen(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.size(40.dp))
             }
@@ -102,7 +100,7 @@ fun DashboardScreen(
                             title = "${reminder.type.name} - ${reminder.petName}",
                             dueLabel = reminder.title,
                             dueInfo = reminder.time?.let {
-                                java.time.format.DateTimeFormatter.ofPattern("HH:mm").format(it)
+                                DateTimeFormatter.ofPattern("HH:mm").format(it)
                             } ?: "Not scheduled",
                             backgroundColor = Color(0xFFF5E6D3),
                             petImage = petEmoji,
@@ -117,7 +115,7 @@ fun DashboardScreen(
                         VaccinationCard(
                             title = "${appointment.title} - ${appointment.petName}",
                             dueLabel = appointment.vetName,
-                            dueInfo = java.time.format.DateTimeFormatter.ofPattern("MMM dd").format(appointment.dateTime),
+                            dueInfo = DateTimeFormatter.ofPattern("MMM dd").format(appointment.dateTime),
                             backgroundColor = Color(0xFFF5E6D3),
                             petImage = petEmoji,
                             onClick = { onAppointmentClick(appointment) }
@@ -158,7 +156,7 @@ fun DashboardScreen(
                         val petEmoji = if (appointment.petName.contains("Max", ignoreCase = true)) "🐕" else "🐈"
                         VetVisitCard(
                             title = "${appointment.petName} - ${appointment.type.name.replace("_", " ")}",
-                            nextVisit = "Next visit on ${java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm").format(appointment.dateTime)}",
+                            nextVisit = "Next visit on ${DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm").format(appointment.dateTime)}",
                             vetName = appointment.vetName,
                             backgroundColor = Color(0xFFF5E6D3),
                             petImage = petEmoji,
