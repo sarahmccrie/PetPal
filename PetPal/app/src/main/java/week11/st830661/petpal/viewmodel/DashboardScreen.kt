@@ -36,7 +36,8 @@ fun DashboardScreen(
     reminders: List<Reminder> = emptyList(),
     appointments: List<Appointment> = emptyList(),
     onReminderClick: (Reminder) -> Unit = {},
-    onAppointmentClick: (Appointment) -> Unit = {}
+    onAppointmentClick: (Appointment) -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     // Get upcoming events sorted by date/time
     val upcomingReminders = reminders.filter { it.isActive }.sortedBy { it.time }.take(2)
@@ -67,7 +68,15 @@ fun DashboardScreen(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.size(40.dp))
+                Text(
+                    text = "Logout",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFCC0000),
+                    modifier = Modifier
+                        .clickable { onLogout() }
+                        .padding(start = 8.dp)
+                )
             }
         }
 

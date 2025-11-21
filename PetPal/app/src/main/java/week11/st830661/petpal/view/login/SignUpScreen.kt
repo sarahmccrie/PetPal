@@ -2,22 +2,21 @@ package week11.st830661.petpal.view.login
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import week11.st830661.petpal.viewmodel.LoginViewModel
 
 @Composable
-fun LoginScreen(
+fun SignUpScreen(
     viewModel: LoginViewModel,
-    onNavigateToSignUp: () -> Unit,
-    onNavigateToForgot: () -> Unit
+    onNavigateBack: () -> Unit
 ) {
     val state = viewModel.uiState
 
@@ -30,10 +29,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Top text like in your Figma
-        Text("Petpal", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
-        Text("Welcome back", style = MaterialTheme.typography.headlineSmall)
+        Text("Sign Up", style = MaterialTheme.typography.headlineSmall)
 
         Spacer(Modifier.height(24.dp))
 
@@ -51,22 +47,26 @@ fun LoginScreen(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
             label = { Text("Password") },
-            singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
 
-        Text(
-            text = "Forgot Password?",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .align(Alignment.End)
-                .clickable { onNavigateToForgot() }
+        OutlinedTextField(
+            value = state.confirmPassword,
+            onValueChange = viewModel::onConfirmPasswordChange,
+            label = { Text("Confirm Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password
+            ),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(16.dp))
@@ -89,7 +89,7 @@ fun LoginScreen(
         }
 
         Button(
-            onClick = { viewModel.login() },
+            onClick = { viewModel.register() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
@@ -101,15 +101,15 @@ fun LoginScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Log In")
+                Text("Sign Up")
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = "Don’t have an account? Sign up",
-            modifier = Modifier.clickable { onNavigateToSignUp() },
+            text = "Already have an account? Sign in",
+            modifier = Modifier.clickable { onNavigateBack() },
             style = MaterialTheme.typography.bodySmall
         )
     }

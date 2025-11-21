@@ -22,7 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import week11.st830661.petpal.view.login.LoginScreen
 import week11.st830661.petpal.ui.theme.PetPalTheme
 import week11.st830661.petpal.viewmodel.DashboardScreen
 import week11.st830661.petpal.viewmodel.PetsScreen
@@ -40,6 +39,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import week11.st830661.petpal.viewmodel.ReminderViewModel
 import week11.st830661.petpal.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
+import week11.st830661.petpal.navigation.LoginNavigation
+import week11.st830661.petpal.viewmodel.LoginViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -72,9 +73,11 @@ class MainActivity : ComponentActivity() {
                     onDispose { auth.removeAuthStateListener(l) }
                 }
 
+                val loginViewModel: LoginViewModel = viewModel()
+
                 if (currentUser == null) {
                     // if no current user signed in
-                    LoginScreen()
+                    LoginNavigation(loginViewModel = loginViewModel)
                 } else {
                     // if signed already signed in
                     MainScreen(
@@ -194,7 +197,8 @@ fun MainScreen(
                     reminders = reminders,
                     appointments = appointments,
                     onReminderClick = { selectedReminder = it },
-                    onAppointmentClick = { selectedAppointment = it }
+                    onAppointmentClick = { selectedAppointment = it },
+                    onLogout = onLogout
                 )
                 NavItem.Pets -> PetsScreen()
                 NavItem.Health -> HealthScreen()
