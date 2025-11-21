@@ -6,6 +6,7 @@ data class MedicalRecord(
     val visits : List<Visit> = emptyList(),
     val diagnoses : List<String> = emptyList(),
     val prescriptions : List<Prescription> = emptyList(),
+    val vaccinations : List<VaccinationRecord> = emptyList(),
     @DocumentId
     val medRecID : String
 )
