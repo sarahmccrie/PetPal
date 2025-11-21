@@ -6,9 +6,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import week11.st830661.petpal.viewmodel.MedicalRecordViewModel
 
 @Composable
-fun AddVaccination() {
+fun AddVaccination(
+    vm : MedicalRecordViewModel,
+    onNavigateBack: () -> Unit) {
     Column(modifier = Modifier.padding(10.dp)) {
         IconButton(onClick = {
             ->
