@@ -1,4 +1,4 @@
-package week11.st830661.petpal.viewmodel
+package week11.st830661.petpal.view.reminder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,6 +54,7 @@ import week11.st830661.petpal.data.models.Reminder
 import week11.st830661.petpal.data.models.ReminderType
 import week11.st830661.petpal.data.models.RecurrencePattern
 import week11.st830661.petpal.data.models.AppointmentType
+import week11.st830661.petpal.data.models.Pet
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -64,6 +65,7 @@ fun RemindersScreen(
     modifier: Modifier = Modifier,
     reminders: List<Reminder> = emptyList(),
     appointments: List<Appointment> = emptyList(),
+    pets: List<Pet> = emptyList(),
     onReminderClick: (Reminder) -> Unit = {},
     onAppointmentClick: (Appointment) -> Unit = {},
     onAddReminder: (Reminder) -> Unit = {},
@@ -126,6 +128,7 @@ fun RemindersScreen(
     // Add Reminder Dialog
     if (showAddReminderDialog) {
         AddReminderDialog(
+            pets = pets,
             onDismiss = { showAddReminderDialog = false },
             onSave = { reminder ->
                 onAddReminder(reminder)
@@ -137,6 +140,7 @@ fun RemindersScreen(
     // Add Appointment Dialog
     if (showAddAppointmentDialog) {
         AddAppointmentDialog(
+            pets = pets,
             onDismiss = { showAddAppointmentDialog = false },
             onSave = { appointment ->
                 onAddAppointment(appointment)
@@ -343,10 +347,12 @@ fun AppointmentCard(
 
 @Composable
 fun AddReminderDialog(
+    pets: List<Pet> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (Reminder) -> Unit
 ) {
-    var petName by remember { mutableStateOf("Max") }
+    var petName by remember { mutableStateOf("") }
+    var selectedPetId by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(ReminderType.FEEDING) }
@@ -357,6 +363,7 @@ fun AddReminderDialog(
     var reminderBeforeMinutes by remember { mutableStateOf("30") }
     var showTypeDropdown by remember { mutableStateOf(false) }
     var showPatternDropdown by remember { mutableStateOf(false) }
+    var showPetDropdown by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -392,14 +399,40 @@ fun AddReminderDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Pet Name
-                OutlinedTextField(
-                    value = petName,
-                    onValueChange = { petName = it },
-                    label = { Text("Pet Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                // Pet Name Dropdown
+                if (pets.isNotEmpty()) {
+                    Box {
+                        OutlinedButton(
+                            onClick = { showPetDropdown = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (petName.isNotEmpty()) "Pet: $petName" else "Select Pet")
+                        }
+                        DropdownMenu(
+                            expanded = showPetDropdown,
+                            onDismissRequest = { showPetDropdown = false }
+                        ) {
+                            pets.forEach { pet ->
+                                DropdownMenuItem(
+                                    text = { Text(pet.name) },
+                                    onClick = {
+                                        petName = pet.name
+                                        selectedPetId = pet.id
+                                        showPetDropdown = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = petName,
+                        onValueChange = { petName = it },
+                        label = { Text("Pet Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -551,11 +584,14 @@ fun AddReminderDialog(
                             errorMessage = ""
                             if (title.isBlank()) {
                                 errorMessage = "Title is required"
+                            } else if (petName.isBlank()) {
+                                errorMessage = "Please select a pet"
                             } else if (reminderBeforeMinutes.toIntOrNull() == null) {
                                 errorMessage = "Enter valid reminder time"
                             } else {
                                 val reminder = Reminder(
                                     id = System.currentTimeMillis().toString(),
+                                    petId = selectedPetId,
                                     petName = petName,
                                     title = title,
                                     description = description,
@@ -581,10 +617,12 @@ fun AddReminderDialog(
 
 @Composable
 fun AddAppointmentDialog(
+    pets: List<Pet> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (Appointment) -> Unit
 ) {
-    var petName by remember { mutableStateOf("Max") }
+    var petName by remember { mutableStateOf("") }
+    var selectedPetId by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(AppointmentType.VET_VISIT) }
     var vetName by remember { mutableStateOf("") }
     var clinicName by remember { mutableStateOf("") }
@@ -596,6 +634,7 @@ fun AddAppointmentDialog(
     var reminderSet by remember { mutableStateOf(true) }
     var reminderBeforeMinutes by remember { mutableStateOf("30") }
     var showTypeDropdown by remember { mutableStateOf(false) }
+    var showPetDropdown by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -631,14 +670,40 @@ fun AddAppointmentDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Pet Name
-                OutlinedTextField(
-                    value = petName,
-                    onValueChange = { petName = it },
-                    label = { Text("Pet Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                // Pet Name Dropdown
+                if (pets.isNotEmpty()) {
+                    Box {
+                        OutlinedButton(
+                            onClick = { showPetDropdown = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (petName.isNotEmpty()) "Pet: $petName" else "Select Pet")
+                        }
+                        DropdownMenu(
+                            expanded = showPetDropdown,
+                            onDismissRequest = { showPetDropdown = false }
+                        ) {
+                            pets.forEach { pet ->
+                                DropdownMenuItem(
+                                    text = { Text(pet.name) },
+                                    onClick = {
+                                        petName = pet.name
+                                        selectedPetId = pet.id
+                                        showPetDropdown = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = petName,
+                        onValueChange = { petName = it },
+                        label = { Text("Pet Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -672,7 +737,7 @@ fun AddAppointmentDialog(
                 OutlinedTextField(
                     value = vetName,
                     onValueChange = { vetName = it },
-                    label = { Text("Vet Name") },
+                    label = { Text("Vet Name (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -683,7 +748,7 @@ fun AddAppointmentDialog(
                 OutlinedTextField(
                     value = clinicName,
                     onValueChange = { clinicName = it },
-                    label = { Text("Clinic Name") },
+                    label = { Text("Clinic Name (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -809,13 +874,14 @@ fun AddAppointmentDialog(
                         onClick = {
                             // Validation
                             errorMessage = ""
-                            if (vetName.isBlank()) {
-                                errorMessage = "Vet name is required"
+                            if (petName.isBlank()) {
+                                errorMessage = "Please select a pet"
                             } else {
                                 val dateTime = appointmentDate.atTime(appointmentHour, appointmentMinute)
 
                                 val appointment = Appointment(
                                     id = System.currentTimeMillis().toString(),
+                                    petId = selectedPetId,
                                     petName = petName,
                                     type = selectedType,
                                     title = selectedType.name.replace("_", " "),

@@ -1,4 +1,4 @@
-package week11.st830661.petpal.viewmodel
+package week11.st830661.petpal.view.reminder
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
