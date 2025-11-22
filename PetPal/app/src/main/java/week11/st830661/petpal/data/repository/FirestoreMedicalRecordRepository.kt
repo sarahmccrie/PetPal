@@ -17,37 +17,53 @@ class FirestoreMedicalRecordRepository (
 
     /** Requirements:
      * TODO #1: Get Medical Record for specific pet                 -> DONE
-     * TODO #2: Get Vaccination History for specific pet            -> DONE
-     * TODO #3: Get Medical Treatment History for specific pet      -> DONE
-     * TODO #4: Add Vaccination Treatment for specific pet          -> DONE
-     * TODO #5: Add Medical Treatment/Visit record for specific pet -> DONE
-     * TODO #6: Edit specific Vaccination record                    -> DONE
-     * TODO #7: Edit specific Medical Treatment/Visit record        -> DONE
-     * TODO #8: Delete specific Vaccination Record                  -> DONE
-     * TODO #9: Delete specific Medical Treatment/Visit record      -> DONE
+     * TODO #2: Get Medical Records for specific owner              -> DONE
+     * TODO #3: Get Vaccination History for specific pet            -> DONE
+     * TODO #4: Get Medical Treatment History for specific pet      -> DONE
+     * TODO #5: Add Vaccination Treatment for specific pet          -> DONE
+     * TODO #6: Add Medical Treatment/Visit record for specific pet -> DONE
+     * TODO #7: Edit specific Vaccination record                    -> DONE
+     * TODO #8: Edit specific Medical Treatment/Visit record        -> DONE
+     * TODO #9: Delete specific Vaccination Record                  -> DONE
+     * TODO #10: Delete specific Medical Treatment/Visit record     -> DONE
      * */
-    private fun medicalRecords(petId : String) =
-        db.collection("medical-records").whereEqualTo("petId", petId)
+    private fun medicalRecords(ownerID : String) =
+        db.collection("users")
+            .document(ownerID)
+            .collection("medical-records")
 
-    // Get medical records for a given pet
-    private fun getMedicalRecordsForPet(petId : String) : Flow<MedicalRecord> = callbackFlow{
-        val query = medicalRecords(petId)
+    fun getMedicalRecordsForOwner(ownerID : String) : Flow<List<MedicalRecord>> = callbackFlow{
+        val query = medicalRecords(ownerID)
             .addSnapshotListener { snapshot, error ->
                 if(error != null){
                     close(error)
                     return@addSnapshotListener
                 }
-
-                trySend(snapshot?.toObjects(MedicalRecord::class.java)?.get(0)
-                    ?: MedicalRecord(medRecID = ""))
+                trySend(snapshot?.toObjects(MedicalRecord::class.java)
+                    ?: emptyList())
             }
         awaitClose { query.remove() }
     }
 
+    // Get medical records for a given pet
+//    fun getMedicalRecordsForPet(petId : String) : Flow<MedicalRecord> = callbackFlow{
+//        val query = medicalRecords(petId)
+//            .addSnapshotListener { snapshot, error ->
+//                if(error != null){
+//                    close(error)
+//                    return@addSnapshotListener
+//                }
+//
+//                trySend(snapshot?.toObjects(MedicalRecord::class.java)?.get(0)
+//                    ?: MedicalRecord(medRecID = ""))
+//            }
+//        awaitClose { query.remove() }
+//    }
+
     // Vaccination records:
     // Gets the vaccination records for a given pet
-    fun getVaccinationRecords(medRecID : String) : Flow<List<VaccinationRecord>> = callbackFlow{
-        val query = db.collection("medical-records")
+    fun getVaccinationRecords(ownerID : String, medRecID : String) : Flow<List<VaccinationRecord>> = callbackFlow{
+        val query = medicalRecords(ownerID)
             .document(medRecID)
             .collection("vaccinations")
             .addSnapshotListener { snapshot, error ->
@@ -62,29 +78,29 @@ class FirestoreMedicalRecordRepository (
         awaitClose { query.remove() }
     }
 
-    fun addVaccinationRecord(medRecID : String, vaccRec : VaccinationRecord) : Boolean{
+    fun addVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
         if(medRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .add(vaccRec)
         return true
     }
 
-    fun editVaccinationRecord(medRecID : String, vaccRec : VaccinationRecord) : Boolean{
+    fun editVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
         if(medRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .document(vaccRec.vacID)
             .set(vaccRec)
         return true
     }
 
-    fun deleteVaccinationRecord(medRecID : String, vaccRecID : String) : Boolean{
+    fun deleteVaccinationRecord(ownerID : String, medRecID : String, vaccRecID : String) : Boolean{
         if(medRecID.isEmpty() || vaccRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .document(vaccRecID)
             .delete()
@@ -93,8 +109,8 @@ class FirestoreMedicalRecordRepository (
 
     // Visit records:
     // Gets the visit history for a given pet
-    fun getVisitRecords(medRecID : String) : Flow<List<Visit>> = callbackFlow {
-        val query = db.collection("medical-records")
+    fun getVisitRecords(ownerID : String, medRecID : String) : Flow<List<Visit>> = callbackFlow {
+        val query = medicalRecords(ownerID)
             .document(medRecID)
             .collection("visits")
             .addSnapshotListener { snapshot, error ->
@@ -109,29 +125,29 @@ class FirestoreMedicalRecordRepository (
         awaitClose { query.remove() }
     }
 
-    fun addVisitRecord(medRecID : String, vaccRec : VaccinationRecord) : Boolean{
+    fun addVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
         if(medRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
-            .add(vaccRec)
+            .add(visitRec)
         return true
     }
 
-    fun editVisitRecord(medRecID : String, visitRec : Visit) : Boolean{
+    fun editVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
         if(medRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .document(visitRec.visitID)
             .set(visitRec)
         return true
     }
 
-    fun deleteVisitRecord(medRecID : String, visitRecID : String) : Boolean{
+    fun deleteVisitRecord(ownerID : String, medRecID : String, visitRecID : String) : Boolean{
         if(medRecID.isEmpty() || visitRecID.isEmpty())
             return false
-        db.collection("medical-records").document(medRecID)
+        medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .document(visitRecID)
             .delete()
