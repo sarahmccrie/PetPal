@@ -1,4 +1,4 @@
-package week11.st830661.petpal.viewmodel
+package week11.st830661.petpal.view.dashboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,9 +25,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
+import week11.st830661.petpal.data.models.Pet
 import week11.st830661.petpal.data.models.AppointmentType
+import androidx.compose.ui.layout.ContentScale
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -35,6 +38,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     reminders: List<Reminder> = emptyList(),
     appointments: List<Appointment> = emptyList(),
+    pets: List<Pet> = emptyList(),
     onReminderClick: (Reminder) -> Unit = {},
     onAppointmentClick: (Appointment) -> Unit = {},
     onLogout: () -> Unit = {}
@@ -104,7 +108,7 @@ fun DashboardScreen(
                 } else {
                     // Display upcoming reminders
                     upcomingReminders.forEach { reminder ->
-                        val petEmoji = if (reminder.petName.contains("Max", ignoreCase = true)) "🐕" else "🐈"
+                        val petImageUrl = pets.find { it.name == reminder.petName }?.photoUrl ?: ""
                         VaccinationCard(
                             title = "${reminder.type.name} - ${reminder.petName}",
                             dueLabel = reminder.title,
@@ -112,7 +116,7 @@ fun DashboardScreen(
                                 DateTimeFormatter.ofPattern("HH:mm").format(it)
                             } ?: "Not scheduled",
                             backgroundColor = Color(0xFFF5E6D3),
-                            petImage = petEmoji,
+                            petImageUrl = petImageUrl,
                             onClick = { onReminderClick(reminder) }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -120,13 +124,13 @@ fun DashboardScreen(
 
                     // Display upcoming appointments
                     upcomingAppointments.forEach { appointment ->
-                        val petEmoji = if (appointment.petName.contains("Max", ignoreCase = true)) "🐕" else "🐈"
+                        val petImageUrl = pets.find { it.name == appointment.petName }?.photoUrl ?: ""
                         VaccinationCard(
                             title = "${appointment.title} - ${appointment.petName}",
                             dueLabel = appointment.vetName,
                             dueInfo = DateTimeFormatter.ofPattern("MMM dd").format(appointment.dateTime),
                             backgroundColor = Color(0xFFF5E6D3),
-                            petImage = petEmoji,
+                            petImageUrl = petImageUrl,
                             onClick = { onAppointmentClick(appointment) }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -162,13 +166,13 @@ fun DashboardScreen(
                     )
                 } else {
                     vetVisits.forEach { appointment ->
-                        val petEmoji = if (appointment.petName.contains("Max", ignoreCase = true)) "🐕" else "🐈"
+                        val petImageUrl = pets.find { it.name == appointment.petName }?.photoUrl ?: ""
                         VetVisitCard(
                             title = "${appointment.petName} - ${appointment.type.name.replace("_", " ")}",
                             nextVisit = "Next visit on ${DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm").format(appointment.dateTime)}",
                             vetName = appointment.vetName,
                             backgroundColor = Color(0xFFF5E6D3),
-                            petImage = petEmoji,
+                            petImageUrl = petImageUrl,
                             onClick = { onAppointmentClick(appointment) }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -225,7 +229,7 @@ fun VaccinationCard(
     dueLabel: String,
     dueInfo: String,
     backgroundColor: Color,
-    petImage: String,
+    petImageUrl: String,
     reminder: Reminder? = null,
     onClick: () -> Unit = {}
 ) {
@@ -268,10 +272,21 @@ fun VaccinationCard(
                 .background(backgroundColor.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = petImage,
-                fontSize = 48.sp
-            )
+            if (petImageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = petImageUrl,
+                    contentDescription = title,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "🐾",
+                    fontSize = 48.sp
+                )
+            }
         }
     }
 }
@@ -282,7 +297,7 @@ fun VetVisitCard(
     nextVisit: String,
     vetName: String = "",
     backgroundColor: Color,
-    petImage: String,
+    petImageUrl: String,
     appointment: Appointment? = null,
     onClick: () -> Unit = {}
 ) {
@@ -327,10 +342,21 @@ fun VetVisitCard(
                 .background(backgroundColor.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = petImage,
-                fontSize = 48.sp
-            )
+            if (petImageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = petImageUrl,
+                    contentDescription = title,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "🐾",
+                    fontSize = 48.sp
+                )
+            }
         }
     }
 }

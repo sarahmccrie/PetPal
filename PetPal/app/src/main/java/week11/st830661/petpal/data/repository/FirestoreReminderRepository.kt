@@ -171,17 +171,77 @@ class FirestoreReminderRepository(private val userId: String, private val contex
     }
 
     suspend fun addAppointment(appointment: Appointment) {
-        val data = appointment.toFirestoreMap()
-        appointmentsCollection.document(appointment.id).set(data)
+        Log.d(TAG, "=== addAppointment called ===")
+        Log.d(TAG, "Appointment ID: ${appointment.id}")
+        Log.d(TAG, "Title: ${appointment.title}")
+        Log.d(TAG, "DateTime: ${appointment.dateTime}")
+        Log.d(TAG, "Reminder Set: ${appointment.reminderSet}")
+
+        try {
+            val data = appointment.toFirestoreMap()
+            Log.d(TAG, "Saving to Firestore...")
+            appointmentsCollection.document(appointment.id).set(data).await()
+            Log.d(TAG, "Saved to Firestore successfully")
+
+            // Schedule appointment reminder if enabled
+            if (appointment.reminderSet) {
+                Log.d(TAG, "Calling ReminderScheduler.scheduleAppointmentReminder()...")
+                reminderScheduler.scheduleAppointmentReminder(appointment)
+                Log.d(TAG, "ReminderScheduler.scheduleAppointmentReminder() completed")
+            } else {
+                Log.d(TAG, "Reminder not set for this appointment, skipping scheduler")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in addAppointment", e)
+            throw e
+        }
     }
 
     suspend fun updateAppointment(appointment: Appointment) {
-        val data = appointment.toFirestoreMap()
-        appointmentsCollection.document(appointment.id).set(data)
+        Log.d(TAG, "=== updateAppointment called ===")
+        Log.d(TAG, "Appointment ID: ${appointment.id}")
+        Log.d(TAG, "Title: ${appointment.title}")
+
+        try {
+            val data = appointment.toFirestoreMap()
+            Log.d(TAG, "Updating in Firestore...")
+            appointmentsCollection.document(appointment.id).set(data).await()
+            Log.d(TAG, "Updated in Firestore successfully")
+
+            // Re-schedule the appointment reminder if enabled
+            if (appointment.reminderSet) {
+                Log.d(TAG, "Cancelling old schedule...")
+                reminderScheduler.cancelAppointmentReminder(appointment.id)
+                Log.d(TAG, "Scheduling new appointment reminder...")
+                reminderScheduler.scheduleAppointmentReminder(appointment)
+                Log.d(TAG, "Re-scheduled successfully")
+            } else {
+                Log.d(TAG, "Reminder not set, cancelling any existing schedule...")
+                reminderScheduler.cancelAppointmentReminder(appointment.id)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in updateAppointment", e)
+            throw e
+        }
     }
 
     suspend fun deleteAppointment(appointmentId: String) {
-        appointmentsCollection.document(appointmentId).delete()
+        Log.d(TAG, "=== deleteAppointment called ===")
+        Log.d(TAG, "Appointment ID: $appointmentId")
+
+        try {
+            Log.d(TAG, "Deleting from Firestore...")
+            appointmentsCollection.document(appointmentId).delete().await()
+            Log.d(TAG, "Deleted from Firestore successfully")
+
+            // Cancel the scheduled appointment reminder notification
+            Log.d(TAG, "Cancelling scheduled reminder...")
+            reminderScheduler.cancelAppointmentReminder(appointmentId)
+            Log.d(TAG, "Appointment reminder cancelled successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in deleteAppointment", e)
+            throw e
+        }
     }
 
     suspend fun getReminder(reminderId: String): Reminder? {

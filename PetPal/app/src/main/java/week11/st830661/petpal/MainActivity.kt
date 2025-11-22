@@ -23,12 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import week11.st830661.petpal.ui.theme.PetPalTheme
-import week11.st830661.petpal.viewmodel.DashboardScreen
+import week11.st830661.petpal.view.dashboard.DashboardScreen
 import week11.st830661.petpal.viewmodel.PetsScreen
 import week11.st830661.petpal.viewmodel.HealthScreen
-import week11.st830661.petpal.viewmodel.RemindersScreen
-import week11.st830661.petpal.viewmodel.ReminderDetailScreen
-import week11.st830661.petpal.viewmodel.AppointmentDetailScreen
+import week11.st830661.petpal.view.reminder.RemindersScreen
+import week11.st830661.petpal.view.reminder.ReminderDetailScreen
+import week11.st830661.petpal.view.reminder.AppointmentDetailScreen
 import week11.st830661.petpal.navigation.BottomNavigationBar
 import week11.st830661.petpal.navigation.NavItem
 import week11.st830661.petpal.data.models.Reminder
@@ -41,6 +41,10 @@ import week11.st830661.petpal.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
 import week11.st830661.petpal.navigation.LoginNavigation
 import week11.st830661.petpal.viewmodel.LoginViewModel
+import week11.st830661.petpal.viewmodel.PetsViewModel
+import week11.st830661.petpal.viewmodel.PetsViewModelFactory
+import androidx.compose.runtime.LaunchedEffect
+import week11.st830661.petpal.utils.ReminderScheduler
 
 class MainActivity : ComponentActivity() {
 
@@ -131,8 +135,12 @@ fun MainScreen(
     context: Context,
     onLogout: () -> Unit
 ) {
-    val viewModel: ReminderViewModel = viewModel(
+    val reminderViewModel: ReminderViewModel = viewModel(
         factory = ReminderViewModelFactory(uid, context)
+    )
+
+    val petsViewModel: PetsViewModel = viewModel(
+        factory = PetsViewModelFactory(uid)
     )
 
     val coroutineScope = rememberCoroutineScope()
@@ -142,8 +150,17 @@ fun MainScreen(
     var selectedAppointment by remember { mutableStateOf<Appointment?>(null) }
 
     // Collect reminders and appointments from Firestore via ViewModel
-    val reminders by viewModel.reminders.collectAsState(initial = emptyList())
-    val appointments by viewModel.appointments.collectAsState(initial = emptyList())
+    val reminders by reminderViewModel.reminders.collectAsState(initial = emptyList())
+    val appointments by reminderViewModel.appointments.collectAsState(initial = emptyList())
+    val pets by petsViewModel.pets.collectAsState(initial = emptyList())
+
+    // Reschedule active reminders when they load from Firestore
+    LaunchedEffect(reminders) {
+        val reminderScheduler = ReminderScheduler(context)
+        reminders.filter { it.isActive }.forEach { reminder ->
+            reminderScheduler.scheduleReminder(reminder)
+        }
+    }
 
     // If a detail screen is open, show it
     if (selectedReminder != null) {
@@ -151,11 +168,11 @@ fun MainScreen(
             reminder = selectedReminder!!,
             onBackClick = { selectedReminder = null },
             onDeleteClick = {
-                viewModel.deleteReminder(selectedReminder!!.id)
+                reminderViewModel.deleteReminder(selectedReminder!!.id)
                 selectedReminder = null
             },
             onUpdateReminder = { updatedReminder ->
-                viewModel.updateReminder(updatedReminder)
+                reminderViewModel.updateReminder(updatedReminder)
                 selectedReminder = null
             }
         )
@@ -167,11 +184,11 @@ fun MainScreen(
             appointment = selectedAppointment!!,
             onBackClick = { selectedAppointment = null },
             onDeleteClick = {
-                viewModel.deleteAppointment(selectedAppointment!!.id)
+                reminderViewModel.deleteAppointment(selectedAppointment!!.id)
                 selectedAppointment = null
             },
             onUpdateAppointment = { updatedAppointment ->
-                viewModel.updateAppointment(updatedAppointment)
+                reminderViewModel.updateAppointment(updatedAppointment)
                 selectedAppointment = null
             }
         )
@@ -196,6 +213,7 @@ fun MainScreen(
                 NavItem.Dashboard -> DashboardScreen(
                     reminders = reminders,
                     appointments = appointments,
+                    pets = pets,
                     onReminderClick = { selectedReminder = it },
                     onAppointmentClick = { selectedAppointment = it },
                     onLogout = onLogout
@@ -207,16 +225,17 @@ fun MainScreen(
                 NavItem.Reminders -> RemindersScreen(
                     reminders = reminders,
                     appointments = appointments,
+                    pets = pets,
                     onReminderClick = { selectedReminder = it },
                     onAppointmentClick = { selectedAppointment = it },
                     onAddReminder = { reminder ->
                         coroutineScope.launch {
-                            viewModel.addReminder(reminder)
+                            reminderViewModel.addReminder(reminder)
                         }
                     },
                     onAddAppointment = { appointment ->
                         coroutineScope.launch {
-                            viewModel.addAppointment(appointment)
+                            reminderViewModel.addAppointment(appointment)
                         }
                     }
                 )

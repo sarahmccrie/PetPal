@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.OneTimeWorkRequestBuilder
 import week11.st830661.petpal.data.models.Reminder
 import week11.st830661.petpal.data.models.RecurrencePattern
+import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.workers.ReminderWorker
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -137,6 +138,13 @@ class ReminderScheduler(private val context: Context) {
 
     private fun scheduleRecurringReminder(reminder: Reminder, inputData: Data) {
         Log.d(TAG, "--- scheduleRecurringReminder START ---")
+
+        // Calculate initial delay to first occurrence
+        val initialDelayInMinutes = calculateDelayToReminderTime(
+            reminder.time ?: LocalTime.now(),
+            reminder.reminderTimeBeforeMinutes
+        )
+
         val intervalInMinutes = when (reminder.recurrencePattern) {
             RecurrencePattern.DAILY -> (24).toLong()
             RecurrencePattern.WEEKLY -> (24 * 7).toLong()
@@ -147,6 +155,7 @@ class ReminderScheduler(private val context: Context) {
             }
         }
 
+        Log.d(TAG, "Initial delay: $initialDelayInMinutes minutes")
         Log.d(TAG, "Interval: $intervalInMinutes hours")
 
         val workRequest = PeriodicWorkRequestBuilder<ReminderWorker>(
@@ -154,11 +163,13 @@ class ReminderScheduler(private val context: Context) {
             TimeUnit.HOURS
         )
             .setInputData(inputData)
+            .setInitialDelay(initialDelayInMinutes, TimeUnit.MINUTES)
             .build()
 
         val workName = "${ReminderWorker.UNIQUE_WORK_NAME_PREFIX}${reminder.id}"
         Log.d(TAG, "Enqueueing periodic work with name: $workName")
         Log.d(TAG, "Work ID: ${workRequest.id}")
+        Log.d(TAG, "First occurrence will fire at: ${LocalDateTime.now().plusMinutes(initialDelayInMinutes)}")
 
         workManager.enqueueUniquePeriodicWork(
             workName,
@@ -247,16 +258,91 @@ class ReminderScheduler(private val context: Context) {
             Log.d(TAG, "Reminder hasn't passed today. Delay: $delay minutes")
             delay
         } else {
-            // If reminder time has passed, schedule it for tomorrow
-            val tomorrowReminder = reminderDateTime.plusDays(1)
-            val delay = Duration.between(now, tomorrowReminder).toMinutes()
-            Log.d(TAG, "Reminder already passed today. Scheduling for tomorrow at: $tomorrowReminder")
-            Log.d(TAG, "Tomorrow's delay: $delay minutes")
-            delay
+            // If reminder time has passed, check if the actual reminder time (without before) is still in the future
+            val actualReminderTime = today.atTime(reminderTime)
+            Log.d(TAG, "Actual reminder time (without before): $actualReminderTime")
+
+            if (actualReminderTime.isAfter(now)) {
+                // The actual reminder time is still in the future, but the "before" time has passed
+                // This means the notification should have already fired, but schedule it now anyway
+                Log.w(TAG, "Warning: 'Before' notification time has already passed, but actual reminder time is still in the future")
+                Log.d(TAG, "Scheduling 'before' notification to fire immediately (delay: 0 minutes)")
+                0L
+            } else {
+                // Both the "before" time and actual reminder time have passed, schedule for tomorrow
+                val tomorrowReminder = reminderDateTime.plusDays(1)
+                val delay = Duration.between(now, tomorrowReminder).toMinutes()
+                Log.d(TAG, "Reminder already passed today. Scheduling for tomorrow at: $tomorrowReminder")
+                Log.d(TAG, "Tomorrow's delay: $delay minutes")
+                delay
+            }
         }
 
         Log.d(TAG, "Final delay in minutes: $delayInMinutes")
         Log.d(TAG, "--- calculateDelayToReminderTime END ---")
         return delayInMinutes
+    }
+
+    fun scheduleAppointmentReminder(appointment: Appointment) {
+        Log.d(TAG, "=== SCHEDULE APPOINTMENT REMINDER START ===")
+        Log.d(TAG, "Appointment ID: ${appointment.id}")
+        Log.d(TAG, "Title: ${appointment.title}")
+        Log.d(TAG, "Pet Name: ${appointment.petName}")
+        Log.d(TAG, "DateTime: ${appointment.dateTime}")
+        Log.d(TAG, "Minutes Before: ${appointment.reminderTimeBeforeMinutes}")
+
+        val now = LocalDateTime.now()
+        val appointmentDateTime = appointment.dateTime.minusMinutes(appointment.reminderTimeBeforeMinutes.toLong())
+
+        Log.d(TAG, "Current DateTime: $now")
+        Log.d(TAG, "Appointment DateTime (minus before minutes): $appointmentDateTime")
+
+        val delayInMinutes = if (appointmentDateTime.isAfter(now)) {
+            val delay = Duration.between(now, appointmentDateTime).toMinutes()
+            Log.d(TAG, "Appointment hasn't passed. Delay: $delay minutes")
+            delay
+        } else {
+            Log.w(TAG, "Appointment time has already passed. Scheduling to fire immediately.")
+            0L
+        }
+
+        Log.d(TAG, "Calculated delay: $delayInMinutes minutes")
+        Log.d(TAG, "Appointment reminder will trigger at: ${LocalDateTime.now().plusMinutes(delayInMinutes)}")
+
+        val inputData = Data.Builder()
+            .putString("reminder_id", appointment.id)
+            .putString("reminder_title", appointment.title)
+            .putString("reminder_description", "")
+            .putString("pet_name", appointment.petName)
+            .putBoolean("is_before_reminder", false)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInputData(inputData)
+            .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+            .build()
+
+        val workName = "appointment_${appointment.id}"
+        Log.d(TAG, "Enqueueing appointment reminder work with name: $workName")
+        Log.d(TAG, "Work ID: ${workRequest.id}")
+
+        workManager.enqueueUniqueWork(
+            workName,
+            androidx.work.ExistingWorkPolicy.KEEP,
+            workRequest
+        )
+
+        Log.d(TAG, "Appointment reminder enqueued successfully")
+        Log.d(TAG, "=== SCHEDULE APPOINTMENT REMINDER END ===")
+    }
+
+    fun cancelAppointmentReminder(appointmentId: String) {
+        Log.d(TAG, "Cancelling appointment reminder: $appointmentId")
+
+        val workName = "appointment_$appointmentId"
+        Log.d(TAG, "Cancelling work: $workName")
+        workManager.cancelUniqueWork(workName)
+
+        Log.d(TAG, "Appointment reminder cancelled: $appointmentId")
     }
 }
