@@ -9,5 +9,5 @@ data class MedicalRecord(
     val prescriptions : List<Prescription> = emptyList(),
     val vaccinations : List<VaccinationRecord> = emptyList(),
     @DocumentId
-    val medRecID : String
+    val medRecID : String = ""
 )

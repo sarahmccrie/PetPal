@@ -1,6 +1,7 @@
 package week11.st830661.petpal.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import week11.st830661.petpal.model.MedicalRecord
 import week11.st830661.petpal.model.VaccinationRecord
 import week11.st830661.petpal.model.Visit
+import week11.st830661.petpal.viewmodel.medicalRecord
 
 
 class FirestoreMedicalRecordRepository (
@@ -27,12 +29,12 @@ class FirestoreMedicalRecordRepository (
      * TODO #9: Delete specific Vaccination Record                  -> DONE
      * TODO #10: Delete specific Medical Treatment/Visit record     -> DONE
      * */
-    private fun medicalRecords(ownerID : String) =
+    private suspend fun medicalRecords(ownerID : String) =
         db.collection("users")
             .document(ownerID)
             .collection("medical-records")
 
-    fun getMedicalRecordsForOwner(ownerID : String) : Flow<List<MedicalRecord>> = callbackFlow{
+    suspend fun getMedicalRecordsForOwner(ownerID : String) : Flow<List<MedicalRecord>> = callbackFlow{
         val query = medicalRecords(ownerID)
             .addSnapshotListener { snapshot, error ->
                 if(error != null){
@@ -43,6 +45,16 @@ class FirestoreMedicalRecordRepository (
                     ?: emptyList())
             }
         awaitClose { query.remove() }
+    }
+
+    suspend fun addMedicalRecord(ownerID : String,
+                         petID : String){
+        Log.d("Test", "Adding pet with id: $petID")
+        if(petID.isEmpty())
+            return
+        Log.d("Test", "After if case")
+        medicalRecords(ownerID)
+            .add(MedicalRecord(petID = petID))
     }
 
     // Get medical records for a given pet
@@ -78,7 +90,7 @@ class FirestoreMedicalRecordRepository (
         awaitClose { query.remove() }
     }
 
-    fun addVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
+    suspend fun addVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -87,7 +99,7 @@ class FirestoreMedicalRecordRepository (
         return true
     }
 
-    fun editVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
+    suspend fun editVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -97,7 +109,7 @@ class FirestoreMedicalRecordRepository (
         return true
     }
 
-    fun deleteVaccinationRecord(ownerID : String, medRecID : String, vaccRecID : String) : Boolean{
+    suspend fun deleteVaccinationRecord(ownerID : String, medRecID : String, vaccRecID : String) : Boolean{
         if(medRecID.isEmpty() || vaccRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -125,7 +137,7 @@ class FirestoreMedicalRecordRepository (
         awaitClose { query.remove() }
     }
 
-    fun addVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
+    suspend fun addVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -134,7 +146,7 @@ class FirestoreMedicalRecordRepository (
         return true
     }
 
-    fun editVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
+    suspend fun editVisitRecord(ownerID : String, medRecID : String, visitRec : Visit) : Boolean{
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -144,7 +156,7 @@ class FirestoreMedicalRecordRepository (
         return true
     }
 
-    fun deleteVisitRecord(ownerID : String, medRecID : String, visitRecID : String) : Boolean{
+    suspend fun deleteVisitRecord(ownerID : String, medRecID : String, visitRecID : String) : Boolean{
         if(medRecID.isEmpty() || visitRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
@@ -155,7 +167,7 @@ class FirestoreMedicalRecordRepository (
     }
 
 //    private fun MedicalRecord.toMap() : Map<String, Any?> = mapOf(
-//        "petId" to petId,
+//        "petID" to petID,
 //        "visits" to visits,
 //        "diagnoses" to diagnoses,
 //        "prescriptions" to prescriptions,

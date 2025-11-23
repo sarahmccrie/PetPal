@@ -7,5 +7,5 @@ data class Prescription(
     val dosage : String = "",
     val instructions : String = "",
     @DocumentId
-    val prescID : String
+    val prescID : String = ""
 )

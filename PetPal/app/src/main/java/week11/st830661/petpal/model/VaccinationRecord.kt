@@ -9,5 +9,5 @@ data class VaccinationRecord(
     val nextVaccineDate : LocalDate = dateAdministered.plusYears(2),
     val administeredBy : String = "",
     @DocumentId
-    val vacID : String
+    val vacID : String = ""
 )

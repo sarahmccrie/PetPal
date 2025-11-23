@@ -1,5 +1,6 @@
 package week11.st830661.petpal.view.medical
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -23,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,8 +37,10 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun AddVaccination(
+    uid : String,
+    medRecID : String,
     vm : MedicalRecordViewModel,
-    onSave : (vaccine : String, dateAdministerd : LocalDate, nextVaccDate : LocalDate, adminBy : String) -> Unit,
+//    onSave : (vaccine : String, dateAdministerd : LocalDate, nextVaccDate : LocalDate, adminBy : String) -> Unit,
     onNavigateBack: () -> Unit) {
     var vaccineType by remember { mutableStateOf("") }
     var dateAdministered by remember { mutableStateOf(LocalDate.now()) }
@@ -44,18 +49,16 @@ fun AddVaccination(
     var nextVaccineDateRaw by remember { mutableStateOf(nextVaccineDate.toString()) }
     var administeredBy by remember { mutableStateOf("") }
 
-    val dateTimeFormatter = DateTimeFormatter.ofPattern("MM/DD/YYYY")
-
-    Column(modifier = Modifier.Companion.padding(10.dp)) {
+    Column(modifier = Modifier.padding(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically) {
-        FilledTonalButton(onClick = onNavigateBack) {
-            Icon(
-                modifier = Modifier.Companion.padding(5.dp),
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    modifier = Modifier.padding(5.dp),
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
             Text(
                 text = "Add Vaccination",
                 fontSize = 22.sp,
@@ -80,16 +83,23 @@ fun AddVaccination(
         // Pushes the next component to the bottom
         Spacer(modifier = Modifier.weight(1f))
 
+        var continueToHealth = false
         Button(onClick = {
-            MedicalRecordViewModel.saveRecord(
+            vm.addVaccinationRecord(
+                uid,
+                medRecID,
                 vaccineType,
                 dateAdministeredRaw,
                 nextVaccineDateRaw,
-                administeredBy)
-        }) { success ->
-            if(success) {
-                HealthScreen()
+                administeredBy
+            ){ success ->
+                continueToHealth = success
             }
+        }) {
+            if(!continueToHealth)
+                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+            else
+                HealthScreen(uid = uid)
         }
     }
 }

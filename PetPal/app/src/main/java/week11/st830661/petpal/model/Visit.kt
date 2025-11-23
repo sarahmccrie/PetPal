@@ -11,5 +11,5 @@ data class Visit(
     val treatment : String = "",
     val prescription : Prescription,
     @DocumentId
-    val visitID : String
+    val visitID : String = ""
 )

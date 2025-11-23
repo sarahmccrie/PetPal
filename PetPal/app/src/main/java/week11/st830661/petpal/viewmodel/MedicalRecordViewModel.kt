@@ -1,16 +1,23 @@
 package week11.st830661.petpal.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import week11.st830661.petpal.data.repository.FirestoreMedicalRecordRepository
 import week11.st830661.petpal.model.MedicalRecord
 import week11.st830661.petpal.model.VaccinationRecord
 import week11.st830661.petpal.model.Visit
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class MedicalRecordViewModel (
     private val uid : String,
@@ -27,6 +34,9 @@ class MedicalRecordViewModel (
      * TODO #8: Delete specific Vaccination Record                  -> DONE
      * TODO #9: Delete specific Medical Treatment/Visit record      -> DONE
      * */
+
+    // Formatter for checking and ensuring all dates are stored properly
+    private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     private val _medicalRecords = MutableStateFlow<List<MedicalRecord>>(emptyList())
     val medicalRecords : StateFlow<List<MedicalRecord>> = _medicalRecords
 
@@ -38,15 +48,58 @@ class MedicalRecordViewModel (
 
     fun getMedicalRecordsForOwner(ownerID : String){
         viewModelScope.launch {
-            medRepository.getMedicalRecordsForOwner(ownerID).collect { list ->
+            medRepository.getMedicalRecordsForOwner(ownerID)
+                .distinctUntilChanged()
+                .collect { list ->
                 _medicalRecords.value = list
             }
         }
     }
 
+//    suspend fun fetchMedicalRecordsForOwner(ownerID: String): List<MedicalRecord> {
+//        return medRepository.getMedicalRecordsForOwner(ownerID).first()
+//    }
+
+    fun addOrGetMedicalRecord(ownerID : String,
+                         petID: String,
+                         onReady: (MedicalRecord?) -> Unit) {
+        viewModelScope.launch {
+            // Gets an up to date version of the list of medical records
+            val currentRecords = medRepository.getMedicalRecordsForOwner(ownerID)
+                .distinctUntilChanged().first()
+            _medicalRecords.value = currentRecords
+//            getMedicalRecordsForOwner(ownerID)
+
+//            delay(500)
+            val medRec = medicalRecords.value.find { it.petID == petID}
+            if(medRec != null) {
+                onReady(medRec)
+                return@launch
+            }
+            medRepository.addMedicalRecord(ownerID, petID)
+
+            try {
+                withTimeout(5000) {  // 5 second timeout
+                    medicalRecords.value
+                        .find { it.petID == petID }
+                        .let { onReady(it) }
+                }
+            } catch (e: Exception) {
+                Log.e("MedicalVM", "Timeout waiting for medical record", e)
+                onReady(null)
+            }
+            getMedicalRecordsForOwner(ownerID)
+        }
+        medicalRecords.value.forEach {
+            Log.d("Test", "Medical record with ID: ${it.medRecID}")
+        }
+    }
+
     fun getVaccinationRecords(ownerID : String, medRecID : String){
         viewModelScope.launch {
-            medRepository.getVaccinationRecords(ownerID, medRecID).collect { list ->
+            medRepository.getVaccinationRecords(ownerID, medRecID)
+                .distinctUntilChanged()
+                .collect { list ->
                 _vaccinations.value = list
             }
         }
@@ -59,11 +112,35 @@ class MedicalRecordViewModel (
         return vaccinations.value.find {it.vacID == vaccRecID }
     }
 
-    fun addVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord){
+    fun addVaccinationRecord(ownerID : String,
+                             medRecID : String,
+                             vaccine : String,
+                             dateAdminRaw : String,
+                             nextVaccDateRaw :String,
+                             adminBy : String,
+                             onDone : (Boolean) -> Unit){
         viewModelScope.launch {
-            val success = medRepository.addVaccinationRecord(ownerID, medRecID, vaccRec)
-            if(success)
+            var success = false
+            if(formatter.parse(dateAdminRaw) != null
+                || formatter.parse(nextVaccDateRaw) != null) {
+                val dateAdmin = LocalDate.parse(formatter.parse(dateAdminRaw).toString())
+                val nextVaccDate = LocalDate.parse(formatter.parse(nextVaccDateRaw).toString())
+                success = medRepository.addVaccinationRecord(
+                    ownerID,
+                    medRecID,
+                    VaccinationRecord(
+                        vaccine,
+                        dateAdmin,
+                        nextVaccDate,
+                        adminBy
+                    )
+                )
+            }else
+                onDone(false)
+            if(success) {
+                onDone(true)
                 Log.d("Success", "Vaccination record added successfully")
+            }
         }
     }
 

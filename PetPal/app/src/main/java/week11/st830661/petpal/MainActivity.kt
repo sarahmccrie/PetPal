@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import android.Manifest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +45,9 @@ import week11.st830661.petpal.viewmodel.LoginViewModel
 import week11.st830661.petpal.viewmodel.PetsViewModel
 import week11.st830661.petpal.viewmodel.PetsViewModelFactory
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
 import week11.st830661.petpal.utils.ReminderScheduler
+import week11.st830661.petpal.viewmodel.MedicalRecordViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -207,6 +210,7 @@ fun MainScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFFF6FFF5))
                 .padding(innerPadding)
         ) {
             when (selectedNavItem) {
@@ -221,7 +225,7 @@ fun MainScreen(
                 NavItem.Pets -> PetsScreen(
                     uid = uid
                 )
-                NavItem.Health -> HealthScreen()
+                NavItem.Health -> HealthScreen(uid)
                 NavItem.Reminders -> RemindersScreen(
                     reminders = reminders,
                     appointments = appointments,
