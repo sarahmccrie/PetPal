@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.KeyboardType
 import week11.st830661.petpal.data.models.Pet
+import week11.st830661.petpal.ui.theme.components.PetPalTextField
 
 private enum class PetsSubScreen {
     LIST,
@@ -139,6 +142,7 @@ fun PetsListScreen(
 
         Text(
             text = "My Pets",
+            style = MaterialTheme.typography.headlineMedium,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -196,8 +200,8 @@ fun PetsListScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = RoundedCornerShape(24.dp)
         ) {
@@ -217,7 +221,7 @@ fun PetListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -228,7 +232,7 @@ fun PetListItem(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFE9F6EC)),
+                .background(MaterialTheme.colorScheme.secondaryContainer),
             contentScale = ContentScale.Crop
         )
 
@@ -285,6 +289,7 @@ fun AddPetScreen(
             }
             Text(
                 text = "Add Pet",
+                style = MaterialTheme.typography.headlineSmall,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
@@ -326,15 +331,15 @@ fun AddPetScreen(
                 .height(52.dp),
             enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
                 Text("Save Pet", fontWeight = FontWeight.SemiBold)
@@ -383,6 +388,7 @@ fun EditPetScreen(
             }
             Text(
                 text = "Edit Pet",
+                style = MaterialTheme.typography.headlineSmall,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
@@ -400,7 +406,7 @@ fun EditPetScreen(
             modifier = Modifier
                 .size(140.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFFE9F6EC)),
+                .background(MaterialTheme.colorScheme.secondaryContainer),
             contentScale = ContentScale.Crop
         )
 
@@ -437,15 +443,15 @@ fun EditPetScreen(
                 .height(52.dp),
             enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
                 Text("Save Changes", fontWeight = FontWeight.SemiBold)
@@ -458,7 +464,7 @@ fun EditPetScreen(
             onClick = onDelete,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Delete Pet", color = Color.Red)
+            Text("Delete Pet", color = MaterialTheme.colorScheme.error)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -479,101 +485,52 @@ private fun PetFormFields(
     photoUrl: String,
     onPhotoUrlChange: (String) -> Unit
 ) {
-    OutlinedTextField(
+    //Pet name
+    PetPalTextField(
         value = name,
         onValueChange = onNameChange,
-        placeholder = { Text("Pet Name") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9F6EC),
-            unfocusedContainerColor = Color(0xFFE9F6EC),
-            disabledContainerColor = Color(0xFFE9F6EC),
-            errorContainerColor = Color(0xFFE9F6EC),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        )
+        placeholder = "Pet Name",
+        modifier = Modifier.fillMaxWidth()
     )
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedTextField(
+    //Pet breed
+    PetPalTextField(
         value = breed,
         onValueChange = onBreedChange,
-        placeholder = { Text("Breed (optional)") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9F6EC),
-            unfocusedContainerColor = Color(0xFFE9F6EC),
-            disabledContainerColor = Color(0xFFE9F6EC),
-            errorContainerColor = Color(0xFFE9F6EC),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        )
+        placeholder = "Breed (optional)",
+        modifier = Modifier.fillMaxWidth()
     )
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedTextField(
+    //Pet species
+    PetPalTextField(
         value = species,
         onValueChange = onSpeciesChange,
-        placeholder = { Text("Species") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9F6EC),
-            unfocusedContainerColor = Color(0xFFE9F6EC),
-            disabledContainerColor = Color(0xFFE9F6EC),
-            errorContainerColor = Color(0xFFE9F6EC),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        )
+        placeholder = "Species",
+        modifier = Modifier.fillMaxWidth()
     )
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedTextField(
+    //Pet age
+    PetPalTextField(
         value = age,
         onValueChange = onAgeChange,
-        placeholder = { Text("Age") },
-        singleLine = true,
+        placeholder = "Age",
         modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9F6EC),
-            unfocusedContainerColor = Color(0xFFE9F6EC),
-            disabledContainerColor = Color(0xFFE9F6EC),
-            errorContainerColor = Color(0xFFE9F6EC),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        )
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
     )
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedTextField(
+    //Pet image url
+    PetPalTextField(
         value = photoUrl,
         onValueChange = onPhotoUrlChange,
-        placeholder = { Text("Photo URL (optional)") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color(0xFFE9F6EC),
-            unfocusedContainerColor = Color(0xFFE9F6EC),
-            disabledContainerColor = Color(0xFFE9F6EC),
-            errorContainerColor = Color(0xFFE9F6EC),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        )
+        placeholder = "Photo URL (optional)",
+        modifier = Modifier.fillMaxWidth()
     )
 }

@@ -73,14 +73,23 @@ fun PetPalTextField(
         visualTransformation = visualTransformation,
         modifier = modifier,
         colors = TextFieldDefaults.colors(
+            //background
             focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
             unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
             disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
             errorContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            //outline
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent
+            errorIndicatorColor = Color.Transparent,
+            //typed text
+            focusedTextColor = Color(0xFF111827),
+            unfocusedTextColor = Color(0xFF111827),
+            //placeholder text
+            focusedPlaceholderColor = MaterialTheme.colorScheme.primary,
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary
+
         )
     )
 }
