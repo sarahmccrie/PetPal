@@ -16,8 +16,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import week11.st830661.petpal.ui.theme.components.PetPalTextField
 import week11.st830661.petpal.viewmodel.LoginViewModel
 
 @Composable
@@ -53,84 +55,54 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Sign Up",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.width(48.dp))
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        OutlinedTextField(
+        //Email
+        PetPalTextField(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            placeholder = { Text("Email") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            placeholder = "Email",
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
+        //Password
+        PetPalTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            placeholder = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
+            placeholder = "Password",
+            modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            visualTransformation = PasswordVisualTransformation()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
+        //Confirm password
+        PetPalTextField(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
-            placeholder = { Text("Confirm Password") },
-            visualTransformation = PasswordVisualTransformation(),
+            placeholder = "Confirm Password",
+            modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            visualTransformation = PasswordVisualTransformation()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        //Messages
         state.errorMessage?.let {
             Text(
                 it,
@@ -148,6 +120,7 @@ fun SignUpScreen(
             Spacer(Modifier.height(8.dp))
         }
 
+        //Sign up button
         Button(
             onClick = { viewModel.register() },
             modifier = Modifier
@@ -156,15 +129,15 @@ fun SignUpScreen(
             enabled = !state.isLoading,
             shape = MaterialTheme.shapes.medium,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
                 Text("Sign Up", fontWeight = FontWeight.SemiBold)
@@ -178,7 +151,8 @@ fun SignUpScreen(
             modifier = Modifier
                 .padding(bottom = 24.dp)
                 .clickable { onNavigateBack() },
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }

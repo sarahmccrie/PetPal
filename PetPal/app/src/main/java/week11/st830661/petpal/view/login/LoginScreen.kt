@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import week11.st830661.petpal.R
+import week11.st830661.petpal.ui.theme.components.PetPalTextField
 import week11.st830661.petpal.viewmodel.LoginViewModel
 
 @Composable
@@ -41,15 +42,12 @@ fun LoginScreen(
         // Title + subtitle
         Text(
             text = "Petpal",
-            style = MaterialTheme.typography.labelLarge,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.labelLarge
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Welcome back",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.SemiBold
+            text = "Welcome Back",
+            style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -64,45 +62,23 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         // Email
-        OutlinedTextField(
+        PetPalTextField(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            placeholder = { Text("Email") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            placeholder = "Email",
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Password
-        OutlinedTextField(
+        PetPalTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            placeholder = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            placeholder = "Password",
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = PasswordVisualTransformation()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -145,15 +121,15 @@ fun LoginScreen(
             enabled = !state.isLoading,
             shape = MaterialTheme.shapes.medium,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
                 Text("Log In", fontWeight = FontWeight.SemiBold)
@@ -168,7 +144,8 @@ fun LoginScreen(
             modifier = Modifier
                 .padding(bottom = 24.dp)
                 .clickable { onNavigateToSignUp() },
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
