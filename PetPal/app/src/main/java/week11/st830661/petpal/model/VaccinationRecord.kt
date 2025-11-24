@@ -5,8 +5,11 @@ import java.time.LocalDate
 
 data class VaccinationRecord(
     val vaccine : String = "",
-    val dateAdministered : LocalDate = LocalDate.now(),
-    val nextVaccineDate : LocalDate = dateAdministered.plusYears(2),
+    val dateAdministered : String = LocalDate.now().toString(),
+    val nextVaccineDate : String = LocalDate
+        .parse(dateAdministered)
+        .plusYears(2)
+        .toString(),
     val administeredBy : String = "",
     @DocumentId
     val vacID : String = ""

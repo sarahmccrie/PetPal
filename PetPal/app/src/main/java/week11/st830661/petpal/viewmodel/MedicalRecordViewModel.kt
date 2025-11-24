@@ -1,8 +1,6 @@
 package week11.st830661.petpal.viewmodel
 
 import android.util.Log
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -37,7 +35,7 @@ class MedicalRecordViewModel (
      * */
 
     // Formatter for checking and ensuring all dates are stored properly
-    private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private val _medicalRecords = MutableStateFlow<List<MedicalRecord>>(emptyList())
     val medicalRecords : StateFlow<List<MedicalRecord>> = _medicalRecords
 
@@ -124,15 +122,15 @@ class MedicalRecordViewModel (
             var success = false
             if(formatter.parse(dateAdminRaw) != null
                 || formatter.parse(nextVaccDateRaw) != null) {
-                val dateAdmin = LocalDate.parse(formatter.parse(dateAdminRaw).toString())
-                val nextVaccDate = LocalDate.parse(formatter.parse(nextVaccDateRaw).toString())
+                val dateAdmin = LocalDate.parse(dateAdminRaw, formatter)
+                val nextVaccDate = LocalDate.parse(nextVaccDateRaw, formatter)
                 success = medRepository.addVaccinationRecord(
                     ownerID,
                     medRecID,
                     VaccinationRecord(
                         vaccine,
-                        dateAdmin,
-                        nextVaccDate,
+                        dateAdmin.toString(),
+                        nextVaccDate.toString(),
                         adminBy
                     )
                 )
@@ -148,23 +146,25 @@ class MedicalRecordViewModel (
     fun editVaccinationRecord(ownerID : String,
                               medRecID : String,
                               vaccine : String,
-                              dateAdminRaw : String,
-                              nextVaccDateRaw :String,
+                              dateAdmin : String,
+                              nextVaccDate :String,
                               adminBy : String,
+                              vaccRecID : String,
                               onDone : (Boolean) -> Unit){
         viewModelScope.launch {
             var success = false
-            if(formatter.parse(dateAdminRaw) != null
-                || formatter.parse(nextVaccDateRaw) != null) {
-                val dateAdmin = LocalDate.parse(formatter.parse(dateAdminRaw).toString())
-                val nextVaccDate = LocalDate.parse(formatter.parse(nextVaccDateRaw).toString())
+            if(LocalDate.parse(dateAdmin, formatter) != null
+                || LocalDate.parse(nextVaccDate, formatter) != null) {
+                val dateAdmin = LocalDate.parse(dateAdmin, formatter).toString()
+                val nextVaccDate = LocalDate.parse(nextVaccDate, formatter).toString()
                 success = medRepository.editVaccinationRecord(
                     ownerID, medRecID,
                     VaccinationRecord(
                         vaccine,
                         dateAdmin,
                         nextVaccDate,
-                        adminBy
+                        adminBy,
+                        vaccRecID
                     )
                 )
             }else
@@ -210,7 +210,7 @@ class MedicalRecordViewModel (
         viewModelScope.launch {
             var success = false
             if(formatter.parse(visitDateRaw) != null) {
-                val visitDate = LocalDateTime.parse(formatter.parse(visitDateRaw).toString())
+                val visitDate = LocalDate.parse(visitDateRaw, formatter).toString()
                 success = medRepository.addVisitRecord(
                     ownerID, medRecID,
                     Visit(
@@ -239,11 +239,12 @@ class MedicalRecordViewModel (
                         visitOutcome : String,
                         treatment : String,
                         prescription : String,
+                        visitID : String,
                         onDone : (Boolean) -> Unit){
         viewModelScope.launch {
             var success = false
             if(formatter.parse(visitDateRaw) != null) {
-                val visitDate = LocalDateTime.parse(formatter.parse(visitDateRaw).toString())
+                val visitDate = LocalDateTime.parse(visitDateRaw, formatter).toString()
                 success = medRepository.editVisitRecord(
                     ownerID, medRecID,
                     Visit(
@@ -252,7 +253,8 @@ class MedicalRecordViewModel (
                         visitReason,
                         visitOutcome,
                         treatment,
-                        prescription
+                        prescription,
+                        visitID
                     )
                 )
             }else

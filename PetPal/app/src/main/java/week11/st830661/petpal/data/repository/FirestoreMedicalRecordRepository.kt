@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import week11.st830661.petpal.model.MedicalRecord
 import week11.st830661.petpal.model.VaccinationRecord
 import week11.st830661.petpal.model.Visit
-import week11.st830661.petpal.viewmodel.medicalRecord
 
 
 class FirestoreMedicalRecordRepository (
@@ -102,6 +101,7 @@ class FirestoreMedicalRecordRepository (
     suspend fun editVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord) : Boolean{
         if(medRecID.isEmpty())
             return false
+        Log.d("Test", "Vacc ID is: ${vaccRec.vacID}")
         medicalRecords(ownerID).document(medRecID)
             .collection("vaccinations")
             .document(vaccRec.vacID)
@@ -141,7 +141,7 @@ class FirestoreMedicalRecordRepository (
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
-            .collection("vaccinations")
+            .collection("visits")
             .add(visitRec)
         return true
     }
@@ -150,7 +150,7 @@ class FirestoreMedicalRecordRepository (
         if(medRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
-            .collection("vaccinations")
+            .collection("visits")
             .document(visitRec.visitID)
             .set(visitRec)
         return true
@@ -160,7 +160,7 @@ class FirestoreMedicalRecordRepository (
         if(medRecID.isEmpty() || visitRecID.isEmpty())
             return false
         medicalRecords(ownerID).document(medRecID)
-            .collection("vaccinations")
+            .collection("visits")
             .document(visitRecID)
             .delete()
         return true

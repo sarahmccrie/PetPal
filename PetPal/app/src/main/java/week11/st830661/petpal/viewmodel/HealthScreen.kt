@@ -28,6 +28,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.collect
 import week11.st830661.petpal.R
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Pet
@@ -209,6 +211,8 @@ fun HealthScreen(uid : String,
                             onSubScreen = true
                             MedicalRecordSubScreens.EDIT_APPOINT
                         },
+                        medicalVM,
+                        remVM,
                         modifier)
                 }
             }
@@ -217,6 +221,7 @@ fun HealthScreen(uid : String,
                     currentMedicalRecord!!.medRecID,
                     medicalVM,
                     onNavigateBack = {
+                        onSubScreen = false
                         medicalVM.getVaccinationRecords(uid,
                             currentMedicalRecord!!.medRecID)
                         currentScreen = MedicalRecordSubScreens.PET_MED_REC
@@ -227,6 +232,7 @@ fun HealthScreen(uid : String,
                     currentVaccRecord!!,
                     medicalVM,
                     onNavigateBack = {
+                        onSubScreen = false
                         currentScreen = MedicalRecordSubScreens.PET_MED_REC
                     })
             }
@@ -235,6 +241,7 @@ fun HealthScreen(uid : String,
                     currentMedicalRecord!!.medRecID,
                     medicalVM,
                     onNavigateBack = {
+                        onSubScreen = false
                         medicalVM.getVisitRecords(uid,
                             currentMedicalRecord!!.medRecID)
                         currentScreen = MedicalRecordSubScreens.PET_MED_REC
@@ -245,6 +252,7 @@ fun HealthScreen(uid : String,
                     currentVisitRecord!!,
                     medicalVM,
                     onNavigateBack = {
+                        onSubScreen = false
                         medicalVM.getVisitRecords(uid,
                             currentMedicalRecord!!.medRecID)
                         currentScreen = MedicalRecordSubScreens.PET_MED_REC
@@ -254,12 +262,15 @@ fun HealthScreen(uid : String,
                 if(showAddApptDialog)
                 AddAppointmentDialog(petVM.pets.value,
                     onDismiss = {
+                        onSubScreen = false
                         showAddApptDialog = false
                     },
                     onSave = { appointment ->
+                        onSubScreen = false
                         coroutineScope.launch {
                             remVM.addAppointment(appointment)
                         }
+                        showAddApptDialog = false
                     })
                 else {
                     showAddApptDialog = true
@@ -362,11 +373,22 @@ fun medicalRecord(
     onEditVaccClick : (MedicalRecord, VaccinationRecord) -> Unit,
     onEditVisitClick : (MedicalRecord, Visit) -> Unit,
     onEditAppointClick : (MedicalRecord, Appointment) -> Unit,
+    medicalVM : MedicalRecordViewModel,
+    reminderVM : ReminderViewModel,
     modifier : Modifier
 ) {
-    var vaccs by remember { mutableStateOf<List<VaccinationRecord>>(emptyList()) }
-    var visits by remember { mutableStateOf<List<Visit>>(emptyList()) }
-    var appointments by remember { mutableStateOf<List<Appointment>>(emptyList()) }
+    val coroutine = rememberCoroutineScope()
+    val vaccs by medicalVM.vaccinations.collectAsState()
+    val visits by medicalVM.visits.collectAsState()
+    val appointments by reminderVM.appointments.collectAsState(initial = emptyList())
+    var petsAppointments by mutableStateOf<List<Appointment>?>(appointments.filter { it.petId == pet.id})
+
+    // Load data once when screen appears
+    LaunchedEffect(medRec.medRecID) {
+        medicalVM.getMedicalRecordsForOwner()
+        medicalVM.getVaccinationRecords(pet.ownerId, medRec.medRecID)
+        medicalVM.getVisitRecords(pet.ownerId, medRec.medRecID)
+    }
 
     Column(modifier = Modifier) {
         Row(
@@ -420,6 +442,7 @@ fun medicalRecord(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Vaccinations
+            if(!vaccs.isEmpty())
             LazyColumn(modifier = Modifier
                 .fillMaxWidth()) {
                 items(vaccs) { vacc ->
@@ -429,6 +452,8 @@ fun medicalRecord(
                         })
                 }
             }
+            else
+                Text("No vaccinations yet.\nAdd some and they will appear here")
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -437,9 +462,10 @@ fun medicalRecord(
                 FilledTonalButton(
                     onClick = { onAddVaccClick(medRec) },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF20C997),
-                        contentColor = Color.White
-                    )
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(24.dp)
                 ) {
                     Icon(
                         modifier = Modifier.padding(5.dp),
@@ -461,6 +487,7 @@ fun medicalRecord(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Visits
+                if(!visits.isEmpty())
                 LazyColumn(modifier = Modifier
                     .fillMaxWidth()) {
                     items(visits) { visit ->
@@ -469,15 +496,18 @@ fun medicalRecord(
                         })
                     }
                 }
+                else
+                    Text("No medical history yet.\nAdd some and it will appear here")
 
                 Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
                     horizontalArrangement = Arrangement.End) {
                     FilledTonalButton(
                         onClick = { onAddVisitClick(medRec) },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF20C997),
-                            contentColor = Color.White
-                        )
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Icon(
                             modifier = Modifier.padding(5.dp),
@@ -500,21 +530,25 @@ fun medicalRecord(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Appointments
+                if(petsAppointments != null && !petsAppointments!!.isEmpty())
                 LazyColumn(modifier = Modifier
                     .fillMaxWidth()) {
                     items(appointments) { appt ->
                         appointmentListItem(appt) { }
                     }
                 }
+                else
+                    Text("No appointments yet.\nAdd some and they will appear here")
 
                 Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
                     horizontalArrangement = Arrangement.End) {
                     FilledTonalButton(
                         onClick = { onAddAppointClick() },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF20C997),
-                            contentColor = Color.White
-                        )
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Icon(
                             modifier = Modifier.padding(5.dp),
@@ -532,7 +566,8 @@ fun medicalRecord(
 fun vaccinationListItem(vaccRec: VaccinationRecord,
                         onClick: () -> Unit){
     Row(modifier = Modifier
-        .fillMaxWidth(),
+        .fillMaxWidth()
+        .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start){
         Box(
@@ -556,7 +591,7 @@ fun vaccinationListItem(vaccRec: VaccinationRecord,
 
         Column(modifier = Modifier,
             verticalArrangement = Arrangement.SpaceBetween){
-            Text(text = vaccRec.dateAdministered.toString(),
+            Text(text = vaccRec.dateAdministered,
                 fontSize = 15.sp,
                 color = Color.Black)
             Text(text = vaccRec.vaccine,
@@ -594,9 +629,8 @@ fun visitListItem(visit : Visit,
 
         Column(modifier = Modifier,
             verticalArrangement = Arrangement.SpaceBetween){
-            Text(text = visit.visitDate.toLocalDate()
-                .format(DateTimeFormatter.ofPattern("yyyy-mm-dd"))
-                .toString(),
+            Text(text = visit.visitDate
+                .format(DateTimeFormatter.ofPattern("yyyy-mm-dd")),
                 fontSize = 15.sp,
                 color = Color.Black)
             Text(text = visit.visitReason,
@@ -634,7 +668,7 @@ fun appointmentListItem(apptRec : Appointment,
 
         Column(modifier = Modifier,
             verticalArrangement = Arrangement.SpaceBetween){
-            Text(text = apptRec.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-mm-dd")).toString(),
+            Text(text = apptRec.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")).toString(),
                 fontSize = 15.sp,
                 color = Color.Black)
             Text(text = apptRec.title,
@@ -651,6 +685,7 @@ fun addVaccination(
     vm : MedicalRecordViewModel,
 //    onSave : (vaccine : String, dateAdministerd : LocalDate, nextVaccDate : LocalDate, adminBy : String) -> Unit,
     onNavigateBack: () -> Unit) {
+    val context = LocalContext.current
     var vaccineType by remember { mutableStateOf("") }
     var dateAdministered by remember { mutableStateOf(LocalDate.now()) }
     var dateAdministeredRaw by remember { mutableStateOf(dateAdministered.toString()) }
@@ -697,12 +732,22 @@ fun addVaccination(
                 administeredBy
             ){ success ->
                 continueToHealth = success
+                if(!continueToHealth)
+                    Toast.makeText(context, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+                else
+                    onNavigateBack()
             }
-        }) {
-            if(!continueToHealth)
-                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
-            else
-                onNavigateBack()
+        },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Text("Save Vaccine Details")
         }
     }
 }
@@ -713,12 +758,11 @@ fun editVaccination(uid : String,
                     vaccRec : VaccinationRecord,
                     vm : MedicalRecordViewModel,
                     onNavigateBack : () -> Unit){
-    var vaccineType by remember { mutableStateOf("") }
-    var dateAdministered by remember { mutableStateOf(LocalDate.now()) }
-    var dateAdministeredRaw by remember { mutableStateOf(dateAdministered.toString()) }
-    var nextVaccineDate by remember { mutableStateOf(dateAdministered.plusYears(2)) }
-    var nextVaccineDateRaw by remember { mutableStateOf(nextVaccineDate.toString()) }
-    var administeredBy by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var vaccineType by remember { mutableStateOf(vaccRec.vaccine) }
+    var dateAdministered by remember { mutableStateOf(vaccRec.dateAdministered) }
+    var nextVaccineDate by remember { mutableStateOf(vaccRec.nextVaccineDate) }
+    var administeredBy by remember { mutableStateOf(vaccRec.administeredBy) }
 
     Column(modifier = Modifier.padding(10.dp)) {
         Row(modifier = Modifier.fillMaxWidth(),
@@ -738,10 +782,10 @@ fun editVaccination(uid : String,
 
         VaccinationFormFields(vaccineType,
             {vaccineType = it},
-            dateAdministeredRaw,
-            {dateAdministeredRaw = it},
-            nextVaccineDateRaw,
-            {nextVaccineDateRaw = it},
+            dateAdministered,
+            {dateAdministered = it},
+            nextVaccineDate,
+            {nextVaccineDate = it},
             administeredBy,
             {administeredBy = it})
 
@@ -754,17 +798,28 @@ fun editVaccination(uid : String,
                 uid,
                 medRecID,
                 vaccineType,
-                dateAdministeredRaw,
-                nextVaccineDateRaw,
-                administeredBy
+                dateAdministered,
+                nextVaccineDate,
+                administeredBy,
+                vaccRec.vacID
             ){ success ->
                 continueToHealth = success
+                if(!continueToHealth)
+                    Toast.makeText(context, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+                else
+                    onNavigateBack()
             }
-        }) {
-            if(!continueToHealth)
-                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
-            else
-                onNavigateBack()
+        },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Text("Save Vaccine Details")
         }
     }
 }
@@ -775,7 +830,11 @@ fun addVisit(
     medRecID : String,
     vm : MedicalRecordViewModel,
     onNavigateBack: () -> Unit) {
-    var visitDateRaw by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var visitDateRaw by remember { mutableStateOf(LocalDate.now()
+        .format(DateTimeFormatter
+            .ofPattern("yyyy-MM-dd"))
+        .toString()) }
     var vetName by remember { mutableStateOf("") }
     var visitReason by remember { mutableStateOf("") }
     var visitOutcome by remember { mutableStateOf("") }
@@ -787,7 +846,7 @@ fun addVisit(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center) {
             Text(
-                text = "Add Vaccination",
+                text = "Add Medical Visit",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
@@ -827,12 +886,22 @@ fun addVisit(
                 prescription
             ){ success ->
                 continueToHealth = success
+                if(!continueToHealth)
+                    Toast.makeText(context, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+                else
+                    onNavigateBack()
             }
-        }) {
-            if(!continueToHealth)
-                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
-            else
-                onNavigateBack()
+        },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Text("Save Visit Details")
         }
     }
 }
@@ -843,7 +912,8 @@ fun editVisit(uid : String,
                     visitRec : Visit,
                     vm : MedicalRecordViewModel,
                     onNavigateBack : () -> Unit){
-    var visitDateRaw by remember { mutableStateOf(visitRec.visitDate.toLocalDate().toString()) }
+    val context = LocalContext.current
+    var visitDate by remember { mutableStateOf(visitRec.visitDate) }
     var vetName by remember { mutableStateOf(visitRec.vetName) }
     var visitReason by remember { mutableStateOf(visitRec.visitReason) }
     var visitOutcome by remember { mutableStateOf(visitRec.visitOutcome) }
@@ -866,8 +936,8 @@ fun editVisit(uid : String,
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        VisitFormFields(visitDateRaw,
-            {visitDateRaw = it},
+        VisitFormFields(visitDate,
+            {visitDate = it},
             vetName,
             {vetName = it},
             visitReason,
@@ -887,20 +957,30 @@ fun editVisit(uid : String,
             vm.editVisitRecord(
                 uid,
                 medRecID,
-                visitDateRaw,
+                visitDate,
                 vetName,
                 visitReason,
                 visitOutcome,
                 treatment,
-                prescription
+                prescription,
+                visitRec.visitID
             ){ success ->
                 continueToHealth = success
+                if(!continueToHealth)
+                    Toast.makeText(context, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+                else
+                    onNavigateBack()
             }
-        }) {
-            if(!continueToHealth)
-                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
-            else
-                onNavigateBack()
+        },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(24.dp)) {
+            Text("Save Visit Details")
         }
     }
 }
@@ -1097,6 +1177,8 @@ fun VisitFormFields(
         )
     )
 
+    Spacer(modifier = Modifier.height(12.dp))
+
     OutlinedTextField(
         value = treatment,
         label = {Text("Treatment Plan")},
@@ -1115,6 +1197,8 @@ fun VisitFormFields(
             errorIndicatorColor = Color.Transparent,
         )
     )
+
+    Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedTextField(
         value = prescription,

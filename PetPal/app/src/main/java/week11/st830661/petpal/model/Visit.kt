@@ -4,7 +4,7 @@ import com.google.firebase.firestore.DocumentId
 import java.time.LocalDateTime
 
 data class Visit(
-    val visitDate : LocalDateTime = LocalDateTime.now(),
+    val visitDate : String = LocalDateTime.now().toString(),
     val vetName : String = "",
     val visitReason : String = "",
     val visitOutcome : String = "",
