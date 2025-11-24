@@ -3,7 +3,6 @@ package week11.st830661.petpal.view.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,27 +10,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
 import week11.st830661.petpal.data.models.Pet
 import week11.st830661.petpal.data.models.AppointmentType
-import androidx.compose.ui.layout.ContentScale
+import week11.st830661.petpal.ui.theme.reusableComponents.ActivityLogItem
 import java.time.format.DateTimeFormatter
+import  week11.st830661.petpal.ui.theme.reusableComponents.VetVisitCard
+import  week11.st830661.petpal.ui.theme.reusableComponents.VaccinationCard
+import week11.st830661.petpal.ui.theme.dashboardCardBackground
+import week11.st830661.petpal.ui.theme.logoutButtonText
+import week11.st830661.petpal.ui.theme.textGray
 
 @Composable
 fun DashboardScreen(
@@ -76,7 +75,7 @@ fun DashboardScreen(
                     text = "Logout",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF00CCC5),
+                    color = logoutButtonText,
                     modifier = Modifier
                         .clickable { onLogout() }
                         .padding(start = 8.dp)
@@ -102,7 +101,7 @@ fun DashboardScreen(
                     Text(
                         text = "No upcoming events",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = textGray,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 } else {
@@ -115,7 +114,7 @@ fun DashboardScreen(
                             dueInfo = reminder.time?.let {
                                 DateTimeFormatter.ofPattern("HH:mm").format(it)
                             } ?: "Not scheduled",
-                            backgroundColor = Color(0xFFF5E6D3),
+                            backgroundColor = dashboardCardBackground,
                             petImageUrl = petImageUrl,
                             onClick = { onReminderClick(reminder) }
                         )
@@ -129,7 +128,7 @@ fun DashboardScreen(
                             title = "${appointment.title} - ${appointment.petName}",
                             dueLabel = appointment.vetName,
                             dueInfo = DateTimeFormatter.ofPattern("MMM dd").format(appointment.dateTime),
-                            backgroundColor = Color(0xFFF5E6D3),
+                            backgroundColor = dashboardCardBackground,
                             petImageUrl = petImageUrl,
                             onClick = { onAppointmentClick(appointment) }
                         )
@@ -161,7 +160,7 @@ fun DashboardScreen(
                     Text(
                         text = "No upcoming vet visits",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = textGray,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 } else {
@@ -171,7 +170,7 @@ fun DashboardScreen(
                             title = "${appointment.petName} - ${appointment.type.name.replace("_", " ")}",
                             nextVisit = "Next visit on ${DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm").format(appointment.dateTime)}",
                             vetName = appointment.vetName,
-                            backgroundColor = Color(0xFFF5E6D3),
+                            backgroundColor = dashboardCardBackground,
                             petImageUrl = petImageUrl,
                             onClick = { onAppointmentClick(appointment) }
                         )
@@ -223,188 +222,3 @@ fun DashboardScreen(
     }
 }
 
-@Composable
-fun VaccinationCard(
-    title: String,
-    dueLabel: String,
-    dueInfo: String,
-    backgroundColor: Color,
-    petImageUrl: String,
-    reminder: Reminder? = null,
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = dueLabel,
-                fontSize = 12.sp,
-                color = Color(0xFF7D9C3C)
-            )
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (backgroundColor == Color(0xFF2C2C2C)) Color.White else Color.Black
-            )
-            Text(
-                text = dueInfo,
-                fontSize = 12.sp,
-                color = Color(0xFF7D9C3C)
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(backgroundColor.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (petImageUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = petImageUrl,
-                    contentDescription = title,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = "🐾",
-                    fontSize = 48.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun VetVisitCard(
-    title: String,
-    nextVisit: String,
-    vetName: String = "",
-    backgroundColor: Color,
-    petImageUrl: String,
-    appointment: Appointment? = null,
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            if (vetName.isNotEmpty()) {
-                Text(
-                    text = "Vet: $vetName",
-                    fontSize = 12.sp,
-                    color = Color(0xFF7D9C3C)
-                )
-            }
-            Text(
-                text = nextVisit,
-                fontSize = 12.sp,
-                color = Color(0xFF7D9C3C)
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(backgroundColor.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (petImageUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = petImageUrl,
-                    contentDescription = title,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = "🐾",
-                    fontSize = 48.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ActivityLogItem(
-    title: String,
-    time: String,
-    icon: String,
-    reminder: Reminder? = null,
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFFF0F0F0)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = icon,
-                fontSize = 24.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
-            Text(
-                text = time,
-                fontSize = 12.sp,
-                color = Color(0xFF999999)
-            )
-        }
-    }
-}

@@ -55,6 +55,7 @@ import week11.st830661.petpal.data.models.ReminderType
 import week11.st830661.petpal.data.models.RecurrencePattern
 import week11.st830661.petpal.data.models.AppointmentType
 import week11.st830661.petpal.data.models.Pet
+import week11.st830661.petpal.ui.theme.PetCard
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -235,7 +236,7 @@ fun ReminderCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF5F5F5))
+            .background(PetCard)
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
@@ -291,7 +292,7 @@ fun AppointmentCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFE8F5E9))
+            .background(PetCard)
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {

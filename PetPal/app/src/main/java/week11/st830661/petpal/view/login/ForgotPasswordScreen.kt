@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import week11.st830661.petpal.ui.theme.components.PetPalTextField
 import week11.st830661.petpal.viewmodel.LoginViewModel
 
 @Composable
@@ -37,29 +38,19 @@ fun ForgotPasswordScreen(
         // Title
         Text(
             text = "Reset Password",
+            style = MaterialTheme.typography.headlineMedium,
             fontSize = 24.sp,
             fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(
+        PetPalTextField(
             value = state.email,
             onValueChange = viewModel::onEmailChange,
-            placeholder = { Text("Email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            placeholder = "Email",
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFE9F6EC),
-                unfocusedContainerColor = Color(0xFFE9F6EC),
-                disabledContainerColor = Color(0xFFE9F6EC),
-                errorContainerColor = Color(0xFFE9F6EC),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -82,7 +73,7 @@ fun ForgotPasswordScreen(
             Spacer(Modifier.height(8.dp))
         }
 
-        // Green button
+        // Send Reset button
         Button(
             onClick = { viewModel.sendPasswordReset() },
             modifier = Modifier
@@ -91,8 +82,8 @@ fun ForgotPasswordScreen(
             enabled = !state.isLoading,
             shape = MaterialTheme.shapes.medium,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF20C997),
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             if (state.isLoading) {
