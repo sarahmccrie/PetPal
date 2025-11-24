@@ -9,7 +9,7 @@ data class Visit(
     val visitReason : String = "",
     val visitOutcome : String = "",
     val treatment : String = "",
-    val prescription : Prescription,
+    val prescription : String = "",
     @DocumentId
     val visitID : String = ""
 )

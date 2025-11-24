@@ -1,6 +1,7 @@
 package week11.st830661.petpal.viewmodel
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,32 +23,46 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.coroutineScope
 import week11.st830661.petpal.R
+import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Pet
 import week11.st830661.petpal.model.MedicalRecord
+import week11.st830661.petpal.model.VaccinationRecord
+import week11.st830661.petpal.model.Visit
+import week11.st830661.petpal.view.reminder.AddAppointmentDialog
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
+import week11.st830661.petpal.model.Prescription
 
 private enum class MedicalRecordSubScreens{
     MED_RECS,
@@ -61,6 +76,7 @@ private enum class MedicalRecordSubScreens{
 }
 @Composable
 fun HealthScreen(uid : String,
+                 remVM : ReminderViewModel,
                  modifier: Modifier = Modifier) {
     var currentScreen by remember {mutableStateOf(MedicalRecordSubScreens.MED_RECS) }
     val medicalVM = MedicalRecordViewModel(uid)
@@ -68,10 +84,16 @@ fun HealthScreen(uid : String,
 
     var currentPet by remember { mutableStateOf<Pet?>(null) }
     var currentMedicalRecord by remember { mutableStateOf<MedicalRecord?>(null) }
+    var currentVaccRecord by remember { mutableStateOf<VaccinationRecord?>(null) }
+    var currentVisitRecord by remember { mutableStateOf<Visit?>(null) }
+    var currentApptRecord by remember { mutableStateOf<Appointment?>(null) }
+    var showAddApptDialog by remember { mutableStateOf(true) }
+    var onSubScreen by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         petVM.pets.value.forEach { pet ->
-            medicalVM.getMedicalRecordsForOwner(pet.ownerId)
+            medicalVM.getMedicalRecordsForOwner()
         }
     }
 
@@ -106,7 +128,9 @@ fun HealthScreen(uid : String,
 //            Spacer(modifier = Modifier.fillMaxWidth(.25f))
             Box(modifier = Modifier.width(48.dp)) {  // Fixed width for button area
                 if (currentScreen != MedicalRecordSubScreens.MED_RECS) {
-                    IconButton(onClick = { currentScreen = MedicalRecordSubScreens.MED_RECS }) {
+                    IconButton(onClick = { currentScreen = if(!onSubScreen)
+                        MedicalRecordSubScreens.MED_RECS else
+                            MedicalRecordSubScreens.PET_MED_REC }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -138,7 +162,8 @@ fun HealthScreen(uid : String,
                     onPetClick = { medicalRecord, pet ->
                         currentMedicalRecord = medicalRecord
                         currentPet = pet
-                        currentScreen = MedicalRecordSubScreens.PET_MED_REC},
+                        onSubScreen = true
+                        currentScreen = MedicalRecordSubScreens.PET_MED_REC },
                     medicalVM,
                     modifier
                 )
@@ -152,25 +177,98 @@ fun HealthScreen(uid : String,
                 }else {
                     Log.d("Test", "Both are not null")
                     medicalRecord(medRec, pet,
-                        onAddVaccClick = {
+                        onAddVaccClick = { medRec ->
+                            currentMedicalRecord = medRec
+                            onSubScreen = true
                             currentScreen = MedicalRecordSubScreens.ADD_VACC
                         },
-                        onAddVisitClick = {
+                        onAddVisitClick = {medRec ->
+                            currentMedicalRecord = medRec
+                            onSubScreen = true
                             currentScreen = MedicalRecordSubScreens.ADD_VISIT
                         },
                         onAddAppointClick = {
+                            onSubScreen = true
                             currentScreen = MedicalRecordSubScreens.ADD_APPOINT
-                        }, modifier)
+                        },
+                        onEditVaccClick = { medRec, vaccRec ->
+                            currentMedicalRecord = medRec
+                            currentVaccRecord = vaccRec
+                            onSubScreen = true
+                            currentScreen = MedicalRecordSubScreens.EDIT_VACC
+                        },
+                        onEditVisitClick = { medRec, visit ->
+                            currentMedicalRecord = medRec
+                            currentVisitRecord = visit
+                            onSubScreen = true
+                            currentScreen = MedicalRecordSubScreens.EDIT_VISIT
+                        },
+                        onEditAppointClick = { medRec, appt ->
+                            currentMedicalRecord = medRec
+                            currentApptRecord = appt
+                            onSubScreen = true
+                            MedicalRecordSubScreens.EDIT_APPOINT
+                        },
+                        modifier)
                 }
             }
             MedicalRecordSubScreens.ADD_VACC -> {
-
+                addVaccination(uid,
+                    currentMedicalRecord!!.medRecID,
+                    medicalVM,
+                    onNavigateBack = {
+                        medicalVM.getVaccinationRecords(uid,
+                            currentMedicalRecord!!.medRecID)
+                        currentScreen = MedicalRecordSubScreens.PET_MED_REC
+                    })
             }
-            MedicalRecordSubScreens.EDIT_VACC -> TODO()
-            MedicalRecordSubScreens.ADD_VISIT -> TODO()
-            MedicalRecordSubScreens.EDIT_VISIT -> TODO()
-            MedicalRecordSubScreens.ADD_APPOINT -> TODO()
-            MedicalRecordSubScreens.EDIT_APPOINT -> TODO()
+            MedicalRecordSubScreens.EDIT_VACC -> {
+                editVaccination(uid, currentMedicalRecord!!.medRecID,
+                    currentVaccRecord!!,
+                    medicalVM,
+                    onNavigateBack = {
+                        currentScreen = MedicalRecordSubScreens.PET_MED_REC
+                    })
+            }
+            MedicalRecordSubScreens.ADD_VISIT -> {
+                addVisit(uid,
+                    currentMedicalRecord!!.medRecID,
+                    medicalVM,
+                    onNavigateBack = {
+                        medicalVM.getVisitRecords(uid,
+                            currentMedicalRecord!!.medRecID)
+                        currentScreen = MedicalRecordSubScreens.PET_MED_REC
+                    })
+            }
+            MedicalRecordSubScreens.EDIT_VISIT -> {
+                editVisit(uid, currentMedicalRecord!!.medRecID,
+                    currentVisitRecord!!,
+                    medicalVM,
+                    onNavigateBack = {
+                        medicalVM.getVisitRecords(uid,
+                            currentMedicalRecord!!.medRecID)
+                        currentScreen = MedicalRecordSubScreens.PET_MED_REC
+                    })
+            }
+            MedicalRecordSubScreens.ADD_APPOINT -> {
+                if(showAddApptDialog)
+                AddAppointmentDialog(petVM.pets.value,
+                    onDismiss = {
+                        showAddApptDialog = false
+                    },
+                    onSave = { appointment ->
+                        coroutineScope.launch {
+                            remVM.addAppointment(appointment)
+                        }
+                    })
+                else {
+                    showAddApptDialog = true
+                    currentScreen = MedicalRecordSubScreens.PET_MED_REC
+                }
+            }
+            MedicalRecordSubScreens.EDIT_APPOINT -> {
+//                EditA
+            }
         }
     }
 }
@@ -198,7 +296,6 @@ fun petMedicalRecordsList(
 //    }
     LazyColumn(modifier = Modifier
         .fillMaxWidth()) {
-        Log.d("Test", "Test inside the list")
         items(pets){ pet ->
             PetMedicalListItem(pet,
                 onClick = {
@@ -208,14 +305,6 @@ fun petMedicalRecordsList(
                         }else
                             Log.e("PetList", "Failed to create medical record")
                     }
-//                    vm.getMedicalRecordsForOwner(pet.ownerId)
-//                    val medRec = vm.medicalRecords.value.find { it.petID == pet.id }
-//                    if(medRec != null) {
-//                        onPetClick(medRec, pet)
-//                    }else
-//                        vm.addOrGetMedicalRecord(pet.ownerId, pet.id){ medRec ->
-//
-//                        }
                 })
         }
     }
@@ -267,11 +356,18 @@ fun PetMedicalListItem(
 fun medicalRecord(
     medRec : MedicalRecord,
     pet : Pet,
-    onAddVaccClick : () -> Unit,
-    onAddVisitClick : () -> Unit,
+    onAddVaccClick : (MedicalRecord) -> Unit,
+    onAddVisitClick : (MedicalRecord) -> Unit,
     onAddAppointClick : () -> Unit,
+    onEditVaccClick : (MedicalRecord, VaccinationRecord) -> Unit,
+    onEditVisitClick : (MedicalRecord, Visit) -> Unit,
+    onEditAppointClick : (MedicalRecord, Appointment) -> Unit,
     modifier : Modifier
 ) {
+    var vaccs by remember { mutableStateOf<List<VaccinationRecord>>(emptyList()) }
+    var visits by remember { mutableStateOf<List<Visit>>(emptyList()) }
+    var appointments by remember { mutableStateOf<List<Appointment>>(emptyList()) }
+
     Column(modifier = Modifier) {
         Row(
             modifier = Modifier
@@ -279,7 +375,7 @@ fun medicalRecord(
 //                .clip(CircleShape)
 //                .background(Color.White)
 //                .padding( horizontal = 6.dp)
-                /*.size(140.dp)*/,
+            /*.size(140.dp)*/,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -291,7 +387,7 @@ fun medicalRecord(
                     .clip(CircleShape)
 //                    .background(Color(0xFFE9F6EC))
                     .size(120.dp)
-                    /*.padding(end = 12.dp)*/,
+                /*.padding(end = 12.dp)*/,
                 contentScale = ContentScale.Crop
             )
 
@@ -324,44 +420,22 @@ fun medicalRecord(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Vaccinations
-//            LazyColumn() {
-//
-//
-//            }
-
-            Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
-                horizontalArrangement = Arrangement.End) {
-                FilledTonalButton(
-                    onClick = { onAddVaccClick },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF20C997),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        modifier = Modifier.padding(5.dp),
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Appointment"
-                    )
+            LazyColumn(modifier = Modifier
+                .fillMaxWidth()) {
+                items(vaccs) { vacc ->
+                    vaccinationListItem(vacc,
+                        onClick = {
+                            onEditVaccClick(medRec, vacc)
+                        })
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column/*(modifier = Modifier.fillMaxWidth())*/ {
-            Text(
-                text = "Medical Treatments",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
                 horizontalArrangement = Arrangement.End) {
                 FilledTonalButton(
-                    onClick = { onAddVisitClick },
+                    onClick = { onAddVaccClick(medRec) },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF20C997),
                         contentColor = Color.White
@@ -370,37 +444,84 @@ fun medicalRecord(
                     Icon(
                         modifier = Modifier.padding(5.dp),
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Visit Details"
+                        contentDescription = "Add Vaccine"
                     )
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column(modifier = Modifier) {
-            Text(
-                text = "Vet Appointments",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
-                horizontalArrangement = Arrangement.End) {
-                FilledTonalButton(
-                    onClick = { onAddAppointClick },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF20C997),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        modifier = Modifier.padding(5.dp),
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Appointment"
-                    )
+            Column/*(modifier = Modifier.fillMaxWidth())*/ {
+                Text(
+                    text = "Medical Treatments",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Visits
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()) {
+                    items(visits) { visit ->
+                        visitListItem(visit, onClick = {
+                            onEditVisitClick(medRec, visit)
+                        })
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
+                    horizontalArrangement = Arrangement.End) {
+                    FilledTonalButton(
+                        onClick = { onAddVisitClick(medRec) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF20C997),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(
+                            modifier = Modifier.padding(5.dp),
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add Visit Details"
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(modifier = Modifier) {
+                Text(
+                    text = "Vet Appointments",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Appointments
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()) {
+                    items(appointments) { appt ->
+                        appointmentListItem(appt) { }
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
+                    horizontalArrangement = Arrangement.End) {
+                    FilledTonalButton(
+                        onClick = { onAddAppointClick() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF20C997),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(
+                            modifier = Modifier.padding(5.dp),
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add Appointment"
+                        )
+                    }
                 }
             }
         }
@@ -408,7 +529,7 @@ fun medicalRecord(
 }
 
 @Composable
-fun vaccinationListItem(medRecID : String,
+fun vaccinationListItem(vaccRec: VaccinationRecord,
                         onClick: () -> Unit){
     Row(modifier = Modifier
         .fillMaxWidth(),
@@ -430,12 +551,24 @@ fun vaccinationListItem(medRecID : String,
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier,
+            verticalArrangement = Arrangement.SpaceBetween){
+            Text(text = vaccRec.dateAdministered.toString(),
+                fontSize = 15.sp,
+                color = Color.Black)
+            Text(text = vaccRec.vaccine,
+                fontSize = 11.sp,
+                color = Color.Gray)
+        }
     }
 }
 
 @Composable
-fun VisitListItem(medRecID : String,
-                        onClick: () -> Unit){
+fun visitListItem(visit : Visit,
+                  onClick: () -> Unit){
     Row(modifier = Modifier
         .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -456,11 +589,25 @@ fun VisitListItem(medRecID : String,
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier,
+            verticalArrangement = Arrangement.SpaceBetween){
+            Text(text = visit.visitDate.toLocalDate()
+                .format(DateTimeFormatter.ofPattern("yyyy-mm-dd"))
+                .toString(),
+                fontSize = 15.sp,
+                color = Color.Black)
+            Text(text = visit.visitReason,
+                fontSize = 11.sp,
+                color = Color.Gray)
+        }
     }
 }
 
 @Composable
-fun AppointmentListItem(medRecID : String,
+fun appointmentListItem(apptRec : Appointment,
                         onClick: () -> Unit){
     Row(modifier = Modifier
         .fillMaxWidth(),
@@ -482,5 +629,509 @@ fun AppointmentListItem(medRecID : String,
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier,
+            verticalArrangement = Arrangement.SpaceBetween){
+            Text(text = apptRec.dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-mm-dd")).toString(),
+                fontSize = 15.sp,
+                color = Color.Black)
+            Text(text = apptRec.title,
+                fontSize = 11.sp,
+                color = Color.Gray)
+        }
     }
+}
+
+@Composable
+fun addVaccination(
+    uid : String,
+    medRecID : String,
+    vm : MedicalRecordViewModel,
+//    onSave : (vaccine : String, dateAdministerd : LocalDate, nextVaccDate : LocalDate, adminBy : String) -> Unit,
+    onNavigateBack: () -> Unit) {
+    var vaccineType by remember { mutableStateOf("") }
+    var dateAdministered by remember { mutableStateOf(LocalDate.now()) }
+    var dateAdministeredRaw by remember { mutableStateOf(dateAdministered.toString()) }
+    var nextVaccineDate by remember { mutableStateOf(dateAdministered.plusYears(2)) }
+    var nextVaccineDateRaw by remember { mutableStateOf(nextVaccineDate.toString()) }
+    var administeredBy by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.padding(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+            Text(
+                text = "Add Vaccination",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+//            Spacer(modifier = Modifier.width(64.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        VaccinationFormFields(vaccineType,
+            {vaccineType = it},
+            dateAdministeredRaw,
+            {dateAdministeredRaw = it},
+            nextVaccineDateRaw,
+            {nextVaccineDateRaw = it},
+            administeredBy,
+            {administeredBy = it})
+
+        // Pushes the next component to the bottom
+        Spacer(modifier = Modifier.weight(1f))
+
+        var continueToHealth = false
+        Button(onClick = {
+            vm.addVaccinationRecord(
+                uid,
+                medRecID,
+                vaccineType,
+                dateAdministeredRaw,
+                nextVaccineDateRaw,
+                administeredBy
+            ){ success ->
+                continueToHealth = success
+            }
+        }) {
+            if(!continueToHealth)
+                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+            else
+                onNavigateBack()
+        }
+    }
+}
+
+@Composable
+fun editVaccination(uid : String,
+                    medRecID : String,
+                    vaccRec : VaccinationRecord,
+                    vm : MedicalRecordViewModel,
+                    onNavigateBack : () -> Unit){
+    var vaccineType by remember { mutableStateOf("") }
+    var dateAdministered by remember { mutableStateOf(LocalDate.now()) }
+    var dateAdministeredRaw by remember { mutableStateOf(dateAdministered.toString()) }
+    var nextVaccineDate by remember { mutableStateOf(dateAdministered.plusYears(2)) }
+    var nextVaccineDateRaw by remember { mutableStateOf(nextVaccineDate.toString()) }
+    var administeredBy by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.padding(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+            Text(
+                text = "Edit Vaccination",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+//            Spacer(modifier = Modifier.width(64.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        VaccinationFormFields(vaccineType,
+            {vaccineType = it},
+            dateAdministeredRaw,
+            {dateAdministeredRaw = it},
+            nextVaccineDateRaw,
+            {nextVaccineDateRaw = it},
+            administeredBy,
+            {administeredBy = it})
+
+        // Pushes the next component to the bottom
+        Spacer(modifier = Modifier.weight(1f))
+
+        var continueToHealth = false
+        Button(onClick = {
+            vm.editVaccinationRecord(
+                uid,
+                medRecID,
+                vaccineType,
+                dateAdministeredRaw,
+                nextVaccineDateRaw,
+                administeredBy
+            ){ success ->
+                continueToHealth = success
+            }
+        }) {
+            if(!continueToHealth)
+                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+            else
+                onNavigateBack()
+        }
+    }
+}
+
+@Composable
+fun addVisit(
+    uid : String,
+    medRecID : String,
+    vm : MedicalRecordViewModel,
+    onNavigateBack: () -> Unit) {
+    var visitDateRaw by remember { mutableStateOf("") }
+    var vetName by remember { mutableStateOf("") }
+    var visitReason by remember { mutableStateOf("") }
+    var visitOutcome by remember { mutableStateOf("") }
+    var treatment by remember { mutableStateOf("") }
+    var prescription by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.padding(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+            Text(
+                text = "Add Vaccination",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+//            Spacer(modifier = Modifier.width(64.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        VisitFormFields(visitDateRaw,
+            {visitDateRaw = it},
+            vetName,
+            {vetName = it},
+            visitReason,
+            {visitReason = it},
+            visitOutcome,
+            {visitOutcome = it},
+            treatment,
+            {treatment = it},
+            prescription,
+            {prescription = it})
+
+        // Pushes the next component to the bottom
+        Spacer(modifier = Modifier.weight(1f))
+
+        var continueToHealth = false
+        Button(onClick = {
+            vm.addVisitRecord(
+                uid,
+                medRecID,
+                visitDateRaw,
+                vetName,
+                visitReason,
+                visitOutcome,
+                treatment,
+                prescription
+            ){ success ->
+                continueToHealth = success
+            }
+        }) {
+            if(!continueToHealth)
+                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+            else
+                onNavigateBack()
+        }
+    }
+}
+
+@Composable
+fun editVisit(uid : String,
+                    medRecID : String,
+                    visitRec : Visit,
+                    vm : MedicalRecordViewModel,
+                    onNavigateBack : () -> Unit){
+    var visitDateRaw by remember { mutableStateOf(visitRec.visitDate.toLocalDate().toString()) }
+    var vetName by remember { mutableStateOf(visitRec.vetName) }
+    var visitReason by remember { mutableStateOf(visitRec.visitReason) }
+    var visitOutcome by remember { mutableStateOf(visitRec.visitOutcome) }
+    var treatment by remember { mutableStateOf(visitRec.treatment) }
+    var prescription by remember { mutableStateOf(visitRec.prescription) }
+
+    Column(modifier = Modifier.padding(10.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center) {
+            Text(
+                text = "Edit Vaccination",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
+            )
+//            Spacer(modifier = Modifier.width(64.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        VisitFormFields(visitDateRaw,
+            {visitDateRaw = it},
+            vetName,
+            {vetName = it},
+            visitReason,
+            {visitReason = it},
+            visitOutcome,
+            {visitOutcome = it},
+            treatment,
+            {treatment = it},
+            prescription,
+            {prescription = it})
+
+        // Pushes the next component to the bottom
+        Spacer(modifier = Modifier.weight(1f))
+
+        var continueToHealth = false
+        Button(onClick = {
+            vm.editVisitRecord(
+                uid,
+                medRecID,
+                visitDateRaw,
+                vetName,
+                visitReason,
+                visitOutcome,
+                treatment,
+                prescription
+            ){ success ->
+                continueToHealth = success
+            }
+        }) {
+            if(!continueToHealth)
+                Toast.makeText(LocalContext.current, "Date fields must be formatted properly", Toast.LENGTH_LONG)
+            else
+                onNavigateBack()
+        }
+    }
+}
+
+@Composable
+fun VaccinationFormFields(
+    type : String = "",
+    onTypeChange : (String) -> Unit,
+    dateAdministered : String = LocalDate.now().toString(),
+    onDateAdminChange : (String) -> Unit,
+    nextVaccineDate : String =
+        LocalDate.parse(dateAdministered)
+            .plusYears(2).toString(),
+    onNextDateChange : (String) -> Unit,
+    administeredBy : String = "",
+    onVetChange : (String) -> Unit
+){
+    OutlinedTextField(
+        value = type,
+        label = {Text("Vaccine Type")},
+        onValueChange = onTypeChange,
+        placeholder = { Text("e.g. Rabies") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = dateAdministered,
+        label = {Text("Date Administered")},
+        onValueChange = onDateAdminChange,
+        placeholder = { Text("MM/DD/YYYY") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = nextVaccineDate,
+        label = {Text("Next Vaccination")},
+        onValueChange = onNextDateChange,
+        placeholder = { Text("MM/DD/YYYY") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = administeredBy,
+        label = {Text("Vet Name")},
+        onValueChange = onVetChange,
+        placeholder = { Text("") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+}
+
+@Composable
+fun VisitFormFields(
+    visitDateRaw : String,
+    onDateChange : (String) -> Unit,
+    vetName : String,
+    onVetChange : (String) -> Unit,
+    visitReason : String,
+    onReasonChange : (String) -> Unit,
+    visitOutcome : String,
+    onOutcomeChange : (String) -> Unit,
+    treatment : String,
+    onTreatmentChange : (String) -> Unit,
+    prescription : String,
+    onPrescriptionChange : (String) -> Unit
+){
+    OutlinedTextField(
+        value = visitDateRaw,
+        label = {Text("Visit Date")},
+        onValueChange = onDateChange,
+        placeholder = { Text("e.g. 2025-10-07") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = vetName,
+        label = { Text("Vet Name")},
+        onValueChange = onVetChange,
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = visitReason,
+        label = {Text("Reason For Visit")},
+        onValueChange = onReasonChange,
+        placeholder = { Text("MM/DD/YYYY") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = visitOutcome,
+        label = {Text("Outcome of Visit")},
+        onValueChange = onOutcomeChange,
+        placeholder = { Text("") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    OutlinedTextField(
+        value = treatment,
+        label = {Text("Treatment Plan")},
+        onValueChange = onTreatmentChange,
+        placeholder = { Text("") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
+
+    OutlinedTextField(
+        value = prescription,
+        label = {Text("Prescription Details")},
+        onValueChange = onPrescriptionChange,
+        placeholder = { Text("") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFE9F6EC),
+            unfocusedContainerColor = Color(0xFFE9F6EC),
+            disabledContainerColor = Color(0xFFE9F6EC),
+            errorContainerColor = Color(0xFFE9F6EC),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+        )
+    )
 }

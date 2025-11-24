@@ -225,7 +225,8 @@ fun MainScreen(
                 NavItem.Pets -> PetsScreen(
                     uid = uid
                 )
-                NavItem.Health -> HealthScreen(uid)
+                NavItem.Health -> HealthScreen(uid,
+                    reminderViewModel)
                 NavItem.Reminders -> RemindersScreen(
                     reminders = reminders,
                     appointments = appointments,

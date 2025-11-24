@@ -17,6 +17,7 @@ import week11.st830661.petpal.model.MedicalRecord
 import week11.st830661.petpal.model.VaccinationRecord
 import week11.st830661.petpal.model.Visit
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class MedicalRecordViewModel (
@@ -46,9 +47,9 @@ class MedicalRecordViewModel (
     private val _visits = MutableStateFlow<List<Visit>>(emptyList())
     val visits : StateFlow<List<Visit>> = _visits
 
-    fun getMedicalRecordsForOwner(ownerID : String){
+    fun getMedicalRecordsForOwner(){
         viewModelScope.launch {
-            medRepository.getMedicalRecordsForOwner(ownerID)
+            medRepository.getMedicalRecordsForOwner(uid)
                 .distinctUntilChanged()
                 .collect { list ->
                 _medicalRecords.value = list
@@ -88,7 +89,7 @@ class MedicalRecordViewModel (
                 Log.e("MedicalVM", "Timeout waiting for medical record", e)
                 onReady(null)
             }
-            getMedicalRecordsForOwner(ownerID)
+            getMedicalRecordsForOwner()
         }
         medicalRecords.value.forEach {
             Log.d("Test", "Medical record with ID: ${it.medRecID}")
@@ -144,11 +145,34 @@ class MedicalRecordViewModel (
         }
     }
 
-    fun editVaccinationRecord(ownerID : String, medRecID : String, vaccRec : VaccinationRecord){
+    fun editVaccinationRecord(ownerID : String,
+                              medRecID : String,
+                              vaccine : String,
+                              dateAdminRaw : String,
+                              nextVaccDateRaw :String,
+                              adminBy : String,
+                              onDone : (Boolean) -> Unit){
         viewModelScope.launch {
-            val success = medRepository.editVaccinationRecord(ownerID, medRecID, vaccRec)
-            if(success)
-                Log.d("Success", "Vaccination record modified successfully")
+            var success = false
+            if(formatter.parse(dateAdminRaw) != null
+                || formatter.parse(nextVaccDateRaw) != null) {
+                val dateAdmin = LocalDate.parse(formatter.parse(dateAdminRaw).toString())
+                val nextVaccDate = LocalDate.parse(formatter.parse(nextVaccDateRaw).toString())
+                success = medRepository.editVaccinationRecord(
+                    ownerID, medRecID,
+                    VaccinationRecord(
+                        vaccine,
+                        dateAdmin,
+                        nextVaccDate,
+                        adminBy
+                    )
+                )
+            }else
+                onDone(false)
+            if(success) {
+                onDone(true)
+                Log.d("Success", "Vaccination record updated successfully")
+            }
         }
     }
 
@@ -174,19 +198,69 @@ class MedicalRecordViewModel (
         return visits.value.find { it.visitID == visitRecID }
     }
 
-    fun addVisitRecord(ownerID : String, medRecID : String, visitRec : Visit){
+    fun addVisitRecord(ownerID : String,
+                       medRecID : String,
+                       visitDateRaw : String,
+                       vetName : String,
+                       visitReason : String,
+                       visitOutcome : String,
+                       treatment : String,
+                       prescription : String,
+                       onDone : (Boolean) -> Unit){
         viewModelScope.launch {
-            val success = medRepository.addVisitRecord(ownerID, medRecID, visitRec)
-            if(success)
+            var success = false
+            if(formatter.parse(visitDateRaw) != null) {
+                val visitDate = LocalDateTime.parse(formatter.parse(visitDateRaw).toString())
+                success = medRepository.addVisitRecord(
+                    ownerID, medRecID,
+                    Visit(
+                        visitDate,
+                        vetName,
+                        visitReason,
+                        visitOutcome,
+                        treatment,
+                        prescription
+                    )
+                )
+            }else
+                onDone(false)
+            if (success) {
+                onDone(true)
                 Log.d("Success", "Visit record added successfully")
+            }
         }
     }
 
-    fun editVisitRecord(ownerID : String, medRecID : String, visitRec : Visit){
+    fun editVisitRecord(ownerID : String,
+                        medRecID : String,
+                        visitDateRaw : String,
+                        vetName : String,
+                        visitReason : String,
+                        visitOutcome : String,
+                        treatment : String,
+                        prescription : String,
+                        onDone : (Boolean) -> Unit){
         viewModelScope.launch {
-            val success = medRepository.editVisitRecord(ownerID, medRecID, visitRec)
-            if(success)
+            var success = false
+            if(formatter.parse(visitDateRaw) != null) {
+                val visitDate = LocalDateTime.parse(formatter.parse(visitDateRaw).toString())
+                success = medRepository.editVisitRecord(
+                    ownerID, medRecID,
+                    Visit(
+                        visitDate,
+                        vetName,
+                        visitReason,
+                        visitOutcome,
+                        treatment,
+                        prescription
+                    )
+                )
+            }else
+                onDone(false)
+            if (success) {
+                onDone(true)
                 Log.d("Success", "Visit record modified successfully")
+            }
         }
     }
 
