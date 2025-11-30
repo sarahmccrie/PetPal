@@ -2,6 +2,7 @@ package week11.st830661.petpal.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -272,5 +273,17 @@ class MedicalRecordViewModel (
             if(success)
                 Log.d("Success", "Visit record removed successfully")
         }
+    }
+}
+
+class MedicalRecordViewModelFactory(
+    private val ownerId: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MedicalRecordViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MedicalRecordViewModel(ownerId) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
@@ -81,9 +82,14 @@ fun HealthScreen(uid : String,
                  remVM : ReminderViewModel,
                  modifier: Modifier = Modifier) {
     var currentScreen by remember {mutableStateOf(MedicalRecordSubScreens.MED_RECS) }
-    val medicalVM = MedicalRecordViewModel(uid)
-    val petVM = PetsViewModel(uid)
+    val medicalVM : MedicalRecordViewModel = viewModel(
+        factory = MedicalRecordViewModelFactory(uid)
+    )
+    val petVM : PetsViewModel = viewModel(
+        factory = PetsViewModelFactory(uid)
+    )
 
+    val pets by petVM.pets.collectAsState()
     var currentPet by remember { mutableStateOf<Pet?>(null) }
     var currentMedicalRecord by remember { mutableStateOf<MedicalRecord?>(null) }
     var currentVaccRecord by remember { mutableStateOf<VaccinationRecord?>(null) }
@@ -260,7 +266,7 @@ fun HealthScreen(uid : String,
             }
             MedicalRecordSubScreens.ADD_APPOINT -> {
                 if(showAddApptDialog)
-                AddAppointmentDialog(petVM.pets.value,
+                AddAppointmentDialog(pets,
                     onDismiss = {
                         onSubScreen = false
                         showAddApptDialog = false
@@ -381,7 +387,7 @@ fun medicalRecord(
     val vaccs by medicalVM.vaccinations.collectAsState()
     val visits by medicalVM.visits.collectAsState()
     val appointments by reminderVM.appointments.collectAsState(initial = emptyList())
-    var petsAppointments by mutableStateOf<List<Appointment>?>(appointments.filter { it.petId == pet.id})
+    var petsAppointments by remember {mutableStateOf<List<Appointment>?>(appointments.filter { it.petId == pet.id})}
 
     // Load data once when screen appears
     LaunchedEffect(medRec.medRecID) {

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 android {
@@ -52,6 +53,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -78,4 +80,12 @@ dependencies {
     //Navigation
     implementation("androidx.navigation:navigation-compose:2.8.0")
 
+    // Maps
+    implementation(libs.google.maps.compose)
+
 }
+
+//secrets {
+//    propertiesFileName = "secrets.properties"
+//    defaultPropertiesFileName = "local.defaults.properties"
+//}
