@@ -287,3 +287,27 @@ class MedicalRecordViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
+//class MedicalRecordViewModelFactory(
+//    private val ownerId: String
+//) : ViewModelProvider.Factory {
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        if (modelClass.isAssignableFrom(MedicalRecordViewModel::class.java)) {
+//            @Suppress("UNCHECKED_CAST")
+//            return MedicalRecordViewModel(ownerId) as T
+//        }
+//        throw IllegalArgumentException("Unknown ViewModel class")
+//    }
+//}
+//
+//class MedicalRecordViewModelFactory(
+//    private val ownerId: String
+//) : ViewModelProvider.Factory {
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        if (modelClass.isAssignableFrom(MedicalRecordViewModel::class.java)) {
+//            @Suppress("UNCHECKED_CAST")
+//            return MedicalRecordViewModel(ownerId) as T
+//        }
+//        throw IllegalArgumentException("Unknown ViewModel class")
+//    }
+//}

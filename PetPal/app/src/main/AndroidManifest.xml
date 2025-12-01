@@ -21,7 +21,7 @@
         android:theme="@style/Theme.PetPal">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="${MAPS_API_KEY}" />
+            android:value="AIzaSyAQzMPUKg8P2YQr2Z2VCHYFseaxzY32kOE" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

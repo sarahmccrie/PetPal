@@ -336,7 +336,7 @@ fun PetMedicalListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -573,7 +573,8 @@ fun vaccinationListItem(vaccRec: VaccinationRecord,
                         onClick: () -> Unit){
     Row(modifier = Modifier
         .fillMaxWidth()
-        .clickable(onClick = onClick),
+        .clickable(onClick = onClick)
+        .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start){
         Box(
@@ -611,7 +612,8 @@ fun vaccinationListItem(vaccRec: VaccinationRecord,
 fun visitListItem(visit : Visit,
                   onClick: () -> Unit){
     Row(modifier = Modifier
-        .fillMaxWidth(),
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start){
         Box(
@@ -650,7 +652,8 @@ fun visitListItem(visit : Visit,
 fun appointmentListItem(apptRec : Appointment,
                         onClick: () -> Unit){
     Row(modifier = Modifier
-        .fillMaxWidth(),
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.surface),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start){
         Box(
