@@ -147,16 +147,14 @@ fun HealthScreen(uid : String,
                 }
             }
 
-            // Center - title (takes remaining space)
             Text(
                 text = "Health",
-                fontSize = 22.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
 
-            // Right side - spacer to balance (same width as left)
             Spacer(modifier = Modifier.width(48.dp))
         }
 
