@@ -6,6 +6,12 @@
 
 package week11.st830661.petpal.view.login
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +40,28 @@ fun LoginScreen(
     val state = viewModel.uiState
 
     LaunchedEffect(Unit) { viewModel.clearMessages() }
+
+    // Infinite animation for the paw logo
+    val infiniteTransition = rememberInfiniteTransition(label = "pawIdle")
+    val pawOffsetY = infiniteTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pawOffsetY"
+    )
+    //Size scaling of Paw Image for animation
+    val pawScale = infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pawScale"
+    )
 
     Column(
         modifier = Modifier
@@ -54,16 +83,22 @@ fun LoginScreen(
             style = MaterialTheme.typography.titleMedium
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(64.dp))
 
         // Paw icon
         Image(
             painter = painterResource(id = R.drawable.pawprint),
             contentDescription = "Petpal logo",
-            modifier = Modifier.size(96.dp)
+            modifier = Modifier
+                .size(120.dp)
+                .graphicsLayer {
+                    translationY = pawOffsetY.value
+                    scaleX = pawScale.value
+                    scaleY = pawScale.value
+                }
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(64.dp))
 
         // Email
         PetPalTextField(
