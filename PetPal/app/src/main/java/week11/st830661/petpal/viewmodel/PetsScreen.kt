@@ -1,5 +1,9 @@
 package week11.st830661.petpal.viewmodel
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,12 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import week11.st830661.petpal.data.models.Pet
+import week11.st830661.petpal.R
 import week11.st830661.petpal.ui.theme.components.PetPalTextField
 
 private enum class PetsSubScreen {
@@ -217,12 +226,48 @@ fun PetListItem(
     pet: Pet,
     onClick: () -> Unit
 ) {
+
+    val scope = rememberCoroutineScope()
+    var isAnimating by remember { mutableStateOf(false) }
+
+    var pawStep by remember { mutableStateOf(-1) }
+    var pawVisible by remember { mutableStateOf(false) }
+
+    val pawAlpha by animateFloatAsState(
+        targetValue = if (pawVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 100),
+        label = "pawAlpha"
+    )
+
+    // Paw positions on screen
+    val pawPositions = listOf(190.dp, 220.dp, 250.dp, 280.dp)
+
+    // Rotations to make it look like stepping footprints
+    val pawRotations = listOf(-25f, 18f, -18f, 25f)
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
+            .clickable(enabled = !isAnimating) {
+                isAnimating = true
+                scope.launch {
+                    // Play 4 steps
+                    repeat(4) { step ->
+                        pawStep = step
+                        pawVisible = true
+                        delay(130)
+                        pawVisible = false
+                        delay(60)
+                    }
+                    onClick()
+                    isAnimating = false
+                }
+            }
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -248,6 +293,24 @@ fun PetListItem(
                 text = pet.species.ifBlank { "Unknown species" },
                 fontSize = 12.sp,
                 color = Color.Gray
+            )
+        }
+    }
+        if (pawStep >= 0 && pawStep < pawPositions.size) {
+            val xOffset = pawPositions[pawStep]
+            val rotation = pawRotations[pawStep]
+
+            Image(
+                painter = painterResource(id = R.drawable.pawprint),
+                contentDescription = "Pawprint step",
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = xOffset)
+                    .size(28.dp)
+                    .graphicsLayer {
+                        rotationZ = rotation
+                        alpha = pawAlpha
+                    }
             )
         }
     }
