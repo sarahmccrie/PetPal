@@ -1,3 +1,9 @@
+/**
+ * Author: Sarah McCrie (991405606)
+ * Sign-up screen for PetPal.
+ * Reuses LoginViewModel state to register a new user and navigate back to login.
+ */
+
 package week11.st830661.petpal.view.login
 
 import androidx.compose.foundation.background

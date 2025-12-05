@@ -1,3 +1,9 @@
+/**
+ * Author: Sarah McCrie (991405606)
+ * Forgot password screen for PetPal.
+ * Lets the user request a password reset email using Firebase Auth
+ */
+
 package week11.st830661.petpal.view.login
 
 import androidx.compose.foundation.background

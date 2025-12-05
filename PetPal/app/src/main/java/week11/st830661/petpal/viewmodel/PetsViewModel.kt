@@ -1,3 +1,9 @@
+/**
+ * Author: Sarah McCrie (991405606)
+ * ViewModel for managing user's pets
+ */
+
+
 package week11.st830661.petpal.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -37,6 +43,7 @@ class PetsViewModel(
         _errorMessage.value = null
     }
 
+    //Add a new pet for the current user - validates against nulls
     fun addPet(
         name: String,
         species: String,
@@ -75,6 +82,7 @@ class PetsViewModel(
         }
     }
 
+    //Update/edit an existing pet - same validation as add pet
     fun updatePet(
         existing: Pet,
         name: String,
@@ -113,6 +121,7 @@ class PetsViewModel(
         }
     }
 
+    //Deletes pet from firestore
     fun deletePet(pet: Pet, onDone: (Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true

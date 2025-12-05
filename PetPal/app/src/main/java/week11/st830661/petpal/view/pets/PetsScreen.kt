@@ -1,6 +1,10 @@
-package week11.st830661.petpal.viewmodel
+/**
+ * Author: Sarah McCrie (991405606)
+ * Pet VIEWS
+ * */
 
-import androidx.compose.animation.core.animateDpAsState
+package week11.st830661.petpal.view.pets
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -32,27 +36,35 @@ import androidx.compose.ui.text.input.KeyboardType
 import week11.st830661.petpal.data.models.Pet
 import week11.st830661.petpal.R
 import week11.st830661.petpal.ui.theme.components.PetPalTextField
+import week11.st830661.petpal.viewmodel.PetsViewModel
+import week11.st830661.petpal.viewmodel.PetsViewModelFactory
 
+
+//Local navigation for pets screens
 private enum class PetsSubScreen {
     LIST,
     ADD,
     EDIT
 }
-
+// Entry composable for the Pets sections. Wires up the PetsViewModel
+// Then chooses which subscreen (list/add/edit) to show based on currentScreen.
 @Composable
 fun PetsScreen(
     modifier: Modifier = Modifier,
     uid: String
 ) {
+    //One PetsViewModel per user id
     val petsViewModel: PetsViewModel = viewModel(
         key = "PetsViewModel_$uid",
         factory = PetsViewModelFactory(uid)
     )
 
+    //Observe UI state from the ViewModel
     val pets by petsViewModel.pets.collectAsState()
     val isLoading by petsViewModel.isLoading.collectAsState()
     val errorMessage by petsViewModel.errorMessage.collectAsState()
 
+    //Local nav within the pets screens
     var currentScreen by remember { mutableStateOf(PetsSubScreen.LIST) }
     var selectedPet by remember { mutableStateOf<Pet?>(null) }
 
@@ -64,6 +76,7 @@ fun PetsScreen(
             onClearError = { petsViewModel.clearError() },
             onAddPetClick = { currentScreen = PetsSubScreen.ADD },
             onPetClick = { pet ->
+                //When a pet from list is clicked, remember it and go to the edit screen
                 selectedPet = pet
                 currentScreen = PetsSubScreen.EDIT
             },
@@ -82,6 +95,7 @@ fun PetsScreen(
                     photoUrl = photoUrl
                 ) { success ->
                     if (success) {
+                        //Navigate back to the list after a successful add
                         currentScreen = PetsSubScreen.LIST
                     }
                 }
@@ -110,6 +124,7 @@ fun PetsScreen(
                             photoUrl = photoUrl
                         ) { success ->
                             if (success) {
+                                //Navigate back to the list after saving any edits
                                 currentScreen = PetsSubScreen.LIST
                             }
                         }
@@ -130,7 +145,8 @@ fun PetsScreen(
     }
 }
 
-//Pets List Screen
+//Pets List Screen - displays list of pets and
+// allows user to add a new pet or edit existing pet
 @Composable
 fun PetsListScreen(
     pets: List<Pet>,
@@ -169,6 +185,7 @@ fun PetsListScreen(
                 CircularProgressIndicator()
             }
         } else if (pets.isEmpty()) {
+            //If there are no pets for current user, display message
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -178,6 +195,7 @@ fun PetsListScreen(
                 Text("No pets yet. Tap 'Add New Pet' to get started.")
             }
         } else {
+            //Show list of user's pets
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
@@ -221,6 +239,7 @@ fun PetsListScreen(
     }
 }
 
+//Single pet item row, includes minimum pet info and animation
 @Composable
 fun PetListItem(
     pet: Pet,
@@ -233,6 +252,7 @@ fun PetListItem(
     var pawStep by remember { mutableStateOf(-1) }
     var pawVisible by remember { mutableStateOf(false) }
 
+    //Fade in and out for pawprint images for animation
     val pawAlpha by animateFloatAsState(
         targetValue = if (pawVisible) 1f else 0f,
         animationSpec = tween(durationMillis = 100),
@@ -253,6 +273,7 @@ fun PetListItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
+            //Don't allow user to click after already clicking and while animation is playing
             .clickable(enabled = !isAnimating) {
                 isAnimating = true
                 scope.launch {
@@ -316,7 +337,7 @@ fun PetListItem(
     }
 }
 
-//Add Pet Screen
+//Add Pet Screen for creating a new pet profile
 @Composable
 fun AddPetScreen(
     modifier: Modifier = Modifier,
@@ -413,7 +434,7 @@ fun AddPetScreen(
     }
 }
 
-//Edit Pet Screen
+//Edit Pet Screen - for editing and deleting existing pets
 @Composable
 fun EditPetScreen(
     modifier: Modifier = Modifier,
@@ -462,7 +483,7 @@ fun EditPetScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Pet image preview
+        // Pet image preview - can be blank if no image was added
         AsyncImage(
             model = photoUrl.ifBlank { null },
             contentDescription = pet.name,
@@ -534,7 +555,7 @@ fun EditPetScreen(
     }
 }
 
-//Pet form fields for sharing over screens
+//Pet form fields for sharing over Add/Edit screens
 @Composable
 private fun PetFormFields(
     name: String,
@@ -558,7 +579,7 @@ private fun PetFormFields(
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    //Pet breed
+    //Pet breed (optional)
     PetPalTextField(
         value = breed,
         onValueChange = onBreedChange,
@@ -578,7 +599,7 @@ private fun PetFormFields(
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    //Pet age
+    //Pet age (must be a number)
     PetPalTextField(
         value = age,
         onValueChange = onAgeChange,
@@ -589,7 +610,7 @@ private fun PetFormFields(
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    //Pet image url
+    //Pet image url (optional)
     PetPalTextField(
         value = photoUrl,
         onValueChange = onPhotoUrlChange,

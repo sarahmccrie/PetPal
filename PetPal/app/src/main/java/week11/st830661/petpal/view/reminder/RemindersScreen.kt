@@ -56,6 +56,7 @@ import week11.st830661.petpal.data.models.RecurrencePattern
 import week11.st830661.petpal.data.models.AppointmentType
 import week11.st830661.petpal.data.models.Pet
 import week11.st830661.petpal.ui.theme.PetCard
+import week11.st830661.petpal.ui.theme.PetGreen
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -87,7 +88,8 @@ fun RemindersScreen(
                         showAddAppointmentDialog = true
                     }
                 },
-                containerColor = Color(0xFF7D9C3C)
+                containerColor = PetGreen,
+                contentColor = Color.White
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
@@ -262,7 +264,7 @@ fun ReminderCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF7D9C3C))
+                        .background(PetGreen)
                         .padding(6.dp)
                 ) {
                     Text(
@@ -319,7 +321,7 @@ fun AppointmentCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF7D9C3C))
+                            .background(PetGreen)
                             .padding(6.dp)
                     ) {
                         Text(
