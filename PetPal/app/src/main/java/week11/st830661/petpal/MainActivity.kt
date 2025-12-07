@@ -25,7 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import week11.st830661.petpal.ui.theme.PetPalTheme
 import week11.st830661.petpal.view.dashboard.DashboardScreen
-import week11.st830661.petpal.viewmodel.PetsScreen
+import week11.st830661.petpal.view.pets.PetsScreen
 import week11.st830661.petpal.viewmodel.HealthScreen
 import week11.st830661.petpal.view.reminder.RemindersScreen
 import week11.st830661.petpal.view.reminder.ReminderDetailScreen
@@ -48,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import week11.st830661.petpal.utils.ReminderScheduler
 import week11.st830661.petpal.viewmodel.MedicalRecordViewModel
+import week11.st830661.petpal.viewmodel.MedicalRecordViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
@@ -146,6 +147,10 @@ fun MainScreen(
         factory = PetsViewModelFactory(uid)
     )
 
+    val medicalRecordViewModel: MedicalRecordViewModel = viewModel(
+        factory = MedicalRecordViewModelFactory(uid)
+    )
+
     val coroutineScope = rememberCoroutineScope()
 
     var selectedNavItem by remember { mutableStateOf(NavItem.Dashboard) }
@@ -156,6 +161,7 @@ fun MainScreen(
     val reminders by reminderViewModel.reminders.collectAsState(initial = emptyList())
     val appointments by reminderViewModel.appointments.collectAsState(initial = emptyList())
     val pets by petsViewModel.pets.collectAsState(initial = emptyList())
+    val medicalRecords by medicalRecordViewModel.medicalRecords.collectAsState(initial = emptyList())
 
     // Reschedule active reminders when they load from Firestore
     LaunchedEffect(reminders) {
@@ -226,7 +232,10 @@ fun MainScreen(
                     uid = uid
                 )
                 NavItem.Health -> HealthScreen(uid,
-                    reminderViewModel)
+                    reminderViewModel,
+                    medicalRecords,
+                    pets,
+                    appointments)
                 NavItem.Reminders -> RemindersScreen(
                     reminders = reminders,
                     appointments = appointments,
