@@ -23,6 +23,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.firebase.firestore.GeoPoint
 //import com.google.android.libraries.places.api.Places
 //import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest
 import kotlinx.coroutines.CompletableDeferred
@@ -80,7 +81,7 @@ class LocationWorker (context : Context) : ComponentActivity() {
 
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    suspend fun searchLocation(context: Context, query: String): LatLng? =
+    suspend fun searchLocation(context: Context, query: String): GeoPoint? =
         suspendCancellableCoroutine { continuation ->
             val geocoder = Geocoder(context, Locale.getDefault())
 
@@ -88,7 +89,7 @@ class LocationWorker (context : Context) : ComponentActivity() {
             object : Geocoder.GeocodeListener {
                 override fun onGeocode(addresses: MutableList<Address>) {
                     val result = addresses.firstOrNull()?.let { address ->
-                        LatLng(address.latitude, address.longitude)
+                        GeoPoint(address.latitude, address.longitude)
                     }
                     continuation.resume(result) { cause, _, _ -> onCancellation(cause) }
                 }
@@ -109,11 +110,11 @@ class LocationWorker (context : Context) : ComponentActivity() {
             }
         }
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    suspend fun getLocationData(context: Context, latLng: LatLng): LocationData = suspendCancellableCoroutine { continuation ->
+    suspend fun getLocationData(context: Context, geoPoint: GeoPoint): LocationData = suspendCancellableCoroutine { continuation ->
         try {
             val geocoder = Geocoder(context, Locale.getDefault())
             // Modern approach for Android 13+
-            geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
+            geocoder.getFromLocation(geoPoint.latitude, geoPoint.longitude, 1) { addresses ->
                 if (addresses.isNotEmpty()) {
                     val address = addresses[0]
 //                    val locationName = address.featureName?.takeIf {
@@ -136,7 +137,7 @@ class LocationWorker (context : Context) : ComponentActivity() {
 //                            "\n\tadminArea: ${address.adminArea}" +
 //                            "\n\textras: ${address.extras}")
                     val locationData = LocationData(
-                        latLng,
+                        geoPoint,
                         address.premises ?: "",
                         address.getAddressLine(0) ?: "",
                     )

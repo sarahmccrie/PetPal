@@ -18,6 +18,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import android.content.Context
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.GeoPoint
 import week11.st830661.petpal.utils.ReminderScheduler
 
 private const val TAG = "FirestoreReminderRepository"
@@ -87,10 +88,9 @@ class FirestoreReminderRepository(private val userId: String, private val contex
                         title = data["title"] as? String ?: "",
                         vetName = data["vetName"] as? String ?: "",
                         clinicName = data["clinicName"] as? String ?: "",
-//                        location = data["location"] as? String ?: "",
                         locationName = data["locationName"] as? String ?: "",
                         locationAddress = data["locationAddress"] as? String ?: "",
-                        locationCoords = data["locationCoords"] as? LatLng ?: LatLng(0.0, 0.0),
+                        locationCoords = data["locationCoords"] as? GeoPoint ?: GeoPoint(0.0, 0.0),
                         dateTime = try { LocalDateTime.parse(data["dateTime"] as? String ?: "", dateTimeFormatter) } catch (e: Exception) { LocalDateTime.now() },
                         notes = data["notes"] as? String ?: "",
                         reminderSet = data["reminderSet"] as? Boolean ?: false,

@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.GeoPoint
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -120,7 +121,6 @@ fun FindAVet(OnNavigate : (LocationData) -> Unit) {
     }
 
     var markerPosition by remember { mutableStateOf<LatLng?>(null) }
-    //    val lw = LocationWorker()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxWidth()
@@ -158,15 +158,19 @@ fun FindAVet(OnNavigate : (LocationData) -> Unit) {
                             when {
                                 (it.type == KeyEventType.KeyUp && it.key == Key.Enter) -> {
                                     scope.launch {
-                                        lw.searchLocation(context, searchQuery)?.let { latLng ->
-                                            markerPosition = latLng
+                                        lw.searchLocation(context, searchQuery)?.let { geoPoint ->
+                                            markerPosition = LatLng(
+                                                geoPoint.latitude,
+                                                geoPoint.longitude)
                                             cameraPositionState.animate(
                                                 update = com.google.android.gms.maps.CameraUpdateFactory
-                                                    .newLatLngZoom(latLng, 15f),
+                                                    .newLatLngZoom(
+                                                        LatLng(geoPoint.latitude,
+                                                        geoPoint.longitude), 15f),
                                                 durationMs = 1000
                                             )
 
-                                            currentLocation = lw.getLocationData(context, latLng)
+                                            currentLocation = lw.getLocationData(context, geoPoint)
                                             if(currentLocation.clinicName.isEmpty()) {
                                                 currentLocation = currentLocation
                                                     .copy(
@@ -190,7 +194,8 @@ fun FindAVet(OnNavigate : (LocationData) -> Unit) {
                             Button(
                                 onClick = {
                                     scope.launch {
-                                        lw.searchLocation(context, searchQuery)?.let { latLng ->
+                                        lw.searchLocation(context, searchQuery)?.let { geoPoint ->
+                                            val latLng = LatLng(geoPoint.latitude, geoPoint.longitude)
                                             markerPosition = latLng
                                             cameraPositionState.animate(
                                                 update = com.google.android.gms.maps.CameraUpdateFactory
@@ -198,7 +203,9 @@ fun FindAVet(OnNavigate : (LocationData) -> Unit) {
                                                 durationMs = 1000
                                             )
 
-                                            currentLocation = lw.getLocationData(context, latLng)
+                                            currentLocation = lw.getLocationData(context,
+                                                GeoPoint(latLng.latitude, latLng.longitude)
+                                            )
                                             if(currentLocation.clinicName.isEmpty()) {
                                                 currentLocation = currentLocation
                                                     .copy(

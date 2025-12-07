@@ -410,8 +410,13 @@ fun AppointmentDetailScreen(
     var editedAppointment by remember { mutableStateOf(appointment) }
     var viewMap by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var coords by remember {mutableStateOf(editedAppointment.locationCoords/*LatLng(
+        editedAppointment.locationCoords.latitude,
+        editedAppointment.locationCoords.longitude)*/)}
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(editedAppointment.locationCoords, 12f)
+        position = CameraPosition.fromLatLngZoom(
+            LatLng(coords.latitude, coords.longitude),
+            12f)
     }
     val context = LocalContext.current
 
@@ -511,33 +516,34 @@ fun AppointmentDetailScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-//                scope.launch {
-//                    cameraPositionState.animate(
-//                        update = CameraUpdateFactory.newLatLngZoom(
-//                            editedAppointment.locationCoords,
-//                            12f
-//                        ),
-//                        durationMs = 1000
-//                    )
-//                }
-//                Box(modifier = Modifier.fillMaxWidth()
-//                    .weight(1f)
-//                    .clip(RoundedCornerShape(16.dp))) {
-//                    // Google Map
-//                    GoogleMap(
-//                        modifier = Modifier.fillMaxSize(),
-//                        cameraPositionState = cameraPositionState,
-//                        properties = MapProperties(isMyLocationEnabled = false),
-//                        uiSettings = MapUiSettings(zoomControlsEnabled = true)
-//                    ) {
-//                        editedAppointment.locationCoords.let { position ->
-//                            Marker(
-//                                state = MarkerState(position = position),
-//                                title = "Selected Location"
-//                            )
-//                        }
-//                    }
-//                }
+                Log.d("Test", "Appointment location coords: $coords")
+                scope.launch {
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(
+                            LatLng(coords.latitude, coords.longitude),
+                            12f
+                        ),
+                        durationMs = 1000
+                    )
+                }
+                Box(modifier = Modifier.fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))) {
+                    // Google Map
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        properties = MapProperties(isMyLocationEnabled = false),
+                        uiSettings = MapUiSettings(zoomControlsEnabled = true)
+                    ) {
+                        editedAppointment.locationCoords.let { position ->
+                            Marker(
+                                state = MarkerState(position = LatLng(position.latitude, position.longitude)),
+                                title = "Selected Location"
+                            )
+                        }
+                    }
+                }
 
                 Text(
                     text = "Date & Time",

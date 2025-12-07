@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.GeoPoint
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import week11.st830661.petpal.R
@@ -80,6 +82,9 @@ private enum class MedicalRecordSubScreens{
 @Composable
 fun HealthScreen(uid : String,
                  remVM : ReminderViewModel,
+                 medRecs : List<MedicalRecord>,
+                 pets : List<Pet>,
+                 appointments : List<Appointment>,
                  modifier: Modifier = Modifier) {
     var currentScreen by remember {mutableStateOf(MedicalRecordSubScreens.MED_RECS) }
     val medicalVM : MedicalRecordViewModel = viewModel(
@@ -89,7 +94,7 @@ fun HealthScreen(uid : String,
         factory = PetsViewModelFactory(uid)
     )
 
-    val pets by petVM.pets.collectAsState()
+//    val pets by petVM.pets.collectAsState()
     var currentPet by remember { mutableStateOf<Pet?>(null) }
     var currentMedicalRecord by remember { mutableStateOf<MedicalRecord?>(null) }
     var currentVaccRecord by remember { mutableStateOf<VaccinationRecord?>(null) }
@@ -164,11 +169,11 @@ fun HealthScreen(uid : String,
             MedicalRecordSubScreens.MED_RECS -> {
                 Log.d("Test", "Med Recs screen")
                 petMedicalRecordsList(
-                    petVM.pets.collectAsState().value,
+                    pets,
                     onPetClick = { medicalRecord, pet ->
                         currentMedicalRecord = medicalRecord
                         currentPet = pet
-                        onSubScreen = true
+                        onSubScreen = false
                         currentScreen = MedicalRecordSubScreens.PET_MED_REC },
                     medicalVM,
                     modifier
@@ -177,12 +182,13 @@ fun HealthScreen(uid : String,
             MedicalRecordSubScreens.PET_MED_REC -> {
                 val pet = currentPet
                 val medRec = currentMedicalRecord
+                onSubScreen = false
                 if(pet == null || medRec == null) {
                     Log.d("Test", "Both are null")
                     currentScreen = MedicalRecordSubScreens.MED_RECS
                 }else {
                     Log.d("Test", "Both are not null")
-                    medicalRecord(medRec, pet,
+                    medicalRecord(medRec, pet, appointments,
                         onAddVaccClick = { medRec ->
                             currentMedicalRecord = medRec
                             onSubScreen = true
@@ -274,6 +280,7 @@ fun HealthScreen(uid : String,
                         coroutineScope.launch {
                             remVM.addAppointment(appointment)
                         }
+//                        appointments = remVM.appointments.collectAsState(initial = appointments)
                         showAddApptDialog = false
                     })
                 else {
@@ -371,6 +378,7 @@ fun PetMedicalListItem(
 fun medicalRecord(
     medRec : MedicalRecord,
     pet : Pet,
+    appointments : List<Appointment>,
     onAddVaccClick : (MedicalRecord) -> Unit,
     onAddVisitClick : (MedicalRecord) -> Unit,
     onAddAppointClick : () -> Unit,
@@ -384,7 +392,8 @@ fun medicalRecord(
     val coroutine = rememberCoroutineScope()
     val vaccs by medicalVM.vaccinations.collectAsState()
     val visits by medicalVM.visits.collectAsState()
-    val appointments by reminderVM.appointments.collectAsState(initial = emptyList())
+    val appointments by remember { mutableStateOf(appointments)}
+    //reminderVM.appointments.collectAsState(initial = emptyList())
     var petsAppointments by remember {mutableStateOf<List<Appointment>?>(appointments.filter { it.petId == pet.id})}
 
     // Load data once when screen appears
@@ -436,19 +445,22 @@ fun medicalRecord(
         }
         Spacer(modifier = Modifier.height(32.dp))
 
-        Column(modifier = Modifier) {
-            Text(
-                text = "Vaccination History",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
+        LazyColumn(modifier = Modifier.fillMaxSize()){
+            item {
+                Text(
+                    text = "Vaccination History",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Vaccinations
-            if(!vaccs.isEmpty())
-            LazyColumn(modifier = Modifier
-                .fillMaxWidth()) {
+            // Vaccinations List
+            if (vaccs.isEmpty()) {
+                item {
+                    Text("No vaccinations yet.\nAdd some and they will appear here")
+                }
+            } else {
                 items(vaccs) { vacc ->
                     vaccinationListItem(vacc,
                         onClick = {
@@ -456,55 +468,62 @@ fun medicalRecord(
                         })
                 }
             }
-            else
-                Text("No vaccinations yet.\nAdd some and they will appear here")
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
-                horizontalArrangement = Arrangement.End) {
-                FilledTonalButton(
-                    onClick = { onAddVaccClick(medRec) },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(24.dp)
+            // Add Vaccination Button
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Icon(
-                        modifier = Modifier.padding(5.dp),
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Vaccine"
-                    )
+                    FilledTonalButton(
+                        onClick = { onAddVaccClick(medRec) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Icon(
+                            modifier = Modifier.padding(5.dp),
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Add Vaccine"
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Column/*(modifier = Modifier.fillMaxWidth())*/ {
+            // Medical Treatments Section Header
+            item {
                 Text(
                     text = "Medical Treatments",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
+            }
 
-                // Visits
-                if(!visits.isEmpty())
-                LazyColumn(modifier = Modifier
-                    .fillMaxWidth()) {
-                    items(visits) { visit ->
-                        visitListItem(visit, onClick = {
-                            onEditVisitClick(medRec, visit)
-                        })
-                    }
-                }
-                else
+            // Visits List
+            if (visits.isEmpty()) {
+                item {
                     Text("No medical history yet.\nAdd some and it will appear here")
+                }
+            } else {
+                items(visits) { visit ->
+                    visitListItem(visit, onClick = {
+                        onEditVisitClick(medRec, visit)
+                    })
+                }
+            }
 
-                Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
-                    horizontalArrangement = Arrangement.End) {
+            // Add Visit Button
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     FilledTonalButton(
                         onClick = { onAddVisitClick(medRec) },
                         colors = ButtonDefaults.buttonColors(
@@ -520,32 +539,37 @@ fun medicalRecord(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Column(modifier = Modifier) {
+            // Vet Appointments Section Header
+            item {
                 Text(
                     text = "Vet Appointments",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
+            }
 
-                // Appointments
-                if(petsAppointments != null && !petsAppointments!!.isEmpty())
-                LazyColumn(modifier = Modifier
-                    .fillMaxWidth()) {
-                    items(appointments) { appt ->
-                        appointmentListItem(appt) { }
-                    }
-                }
-                else
+            // Appointments List
+            if (petsAppointments == null || petsAppointments!!.isEmpty()) {
+                item {
                     Text("No appointments yet.\nAdd some and they will appear here")
+                }
+            } else {
+                items(petsAppointments!!) { appt ->
+                    appointmentListItem(appt) { }
+                }
+            }
 
-                Row(modifier = Modifier.fillMaxWidth()/*.weight(1f)*/,
-                    horizontalArrangement = Arrangement.End) {
+            // Add Appointment Button
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     FilledTonalButton(
                         onClick = { onAddAppointClick() },
                         colors = ButtonDefaults.buttonColors(
@@ -561,6 +585,7 @@ fun medicalRecord(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -649,6 +674,11 @@ fun visitListItem(visit : Visit,
 @Composable
 fun appointmentListItem(apptRec : Appointment,
                         onClick: () -> Unit){
+    Log.d("Test", "Appointment coords: ${apptRec.locationCoords}")
+
+    val testAppointment = Appointment(locationCoords = GeoPoint(69.0, 69.0))
+    Log.d("Test", "Testing testAppointment Coords: ${testAppointment.locationCoords}")
+
     Row(modifier = Modifier
         .fillMaxWidth()
         .background(MaterialTheme.colorScheme.surface),
