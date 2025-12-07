@@ -47,7 +47,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.util.Log
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.DialogProperties
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 import week11.st830661.petpal.data.models.Appointment
 import week11.st830661.petpal.data.models.Reminder
@@ -55,8 +64,9 @@ import week11.st830661.petpal.data.models.ReminderType
 import week11.st830661.petpal.data.models.RecurrencePattern
 import week11.st830661.petpal.data.models.AppointmentType
 import week11.st830661.petpal.data.models.Pet
+import week11.st830661.petpal.model.LocationData
 import week11.st830661.petpal.ui.theme.PetCard
-import week11.st830661.petpal.ui.theme.PetGreen
+import week11.st830661.petpal.view.mapIntegration.FindAVet
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -88,8 +98,7 @@ fun RemindersScreen(
                         showAddAppointmentDialog = true
                     }
                 },
-                containerColor = PetGreen,
-                contentColor = Color.White
+                containerColor = Color(0xFF7D9C3C)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
@@ -264,7 +273,7 @@ fun ReminderCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(PetGreen)
+                        .background(Color(0xFF7D9C3C))
                         .padding(6.dp)
                 ) {
                     Text(
@@ -321,7 +330,7 @@ fun AppointmentCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(PetGreen)
+                            .background(Color(0xFF7D9C3C))
                             .padding(6.dp)
                     ) {
                         Text(
@@ -629,11 +638,13 @@ fun AddAppointmentDialog(
     var selectedType by remember { mutableStateOf(AppointmentType.VET_VISIT) }
     var vetName by remember { mutableStateOf("") }
     var clinicName by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf(LocationData()) }
     var appointmentDate by remember { mutableStateOf(LocalDate.now()) }
     var appointmentHour by remember { mutableStateOf(14) }
     var appointmentMinute by remember { mutableStateOf(0) }
     var notes by remember { mutableStateOf("") }
+    var vetLocation by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+    var viewMap by remember { mutableStateOf(false) }
     var reminderSet by remember { mutableStateOf(true) }
     var reminderBeforeMinutes by remember { mutableStateOf("30") }
     var showTypeDropdown by remember { mutableStateOf(false) }
@@ -641,6 +652,7 @@ fun AddAppointmentDialog(
     var errorMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -655,6 +667,7 @@ fun AddAppointmentDialog(
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
+                    .verticalScroll(scrollState)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -664,7 +677,8 @@ fun AddAppointmentDialog(
                     Text(
                         text = "Log Appointment",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
                     )
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -759,13 +773,28 @@ fun AddAppointmentDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Location
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text("Location/Address") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                Column(modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Location",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier,
+                        color = Color.Black)
+                    Text(text = "Name: ${location.clinicName}" +
+                            " \nAddress: ${location.address}",
+                        fontSize = 14.sp,
+                        modifier = Modifier,
+                        color = Color.Black)
+                }
+                // Changed to using the map
+//                    OutlinedTextField(
+//                        value = location,
+//                        onValueChange = { location = it },
+//                        label = { Text("Location/Address") },
+//                        modifier = Modifier.fillMaxWidth(),
+//                        singleLine = true
+//                    )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -786,7 +815,9 @@ fun AddAppointmentDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Date: ${DateTimeFormatter.ofPattern("MMM dd, yyyy").format(appointmentDate)}"
+                        "Date: ${
+                            DateTimeFormatter.ofPattern("MMM dd, yyyy").format(appointmentDate)
+                        }"
                     )
                 }
 
@@ -863,6 +894,21 @@ fun AddAppointmentDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Button(
+                    onClick = {
+                        viewMap = true
+                    }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.LocationOn, contentDescription = "Pin")
+                        Text("Find a Vet Nearby")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -880,7 +926,8 @@ fun AddAppointmentDialog(
                             if (petName.isBlank()) {
                                 errorMessage = "Please select a pet"
                             } else {
-                                val dateTime = appointmentDate.atTime(appointmentHour, appointmentMinute)
+                                val dateTime =
+                                    appointmentDate.atTime(appointmentHour, appointmentMinute)
 
                                 val appointment = Appointment(
                                     id = System.currentTimeMillis().toString(),
@@ -890,11 +937,15 @@ fun AddAppointmentDialog(
                                     title = selectedType.name.replace("_", " "),
                                     vetName = vetName,
                                     clinicName = clinicName,
-                                    location = location,
+//                                    location = "${location.clinicName} + ${location.address}",
+                                    locationName = location.clinicName,
+                                    locationAddress = location.address,
+                                    locationCoords = location.coords,
                                     dateTime = dateTime,
                                     notes = notes,
                                     reminderSet = reminderSet,
-                                    reminderTimeBeforeMinutes = reminderBeforeMinutes.toIntOrNull() ?: 30
+                                    reminderTimeBeforeMinutes = reminderBeforeMinutes.toIntOrNull()
+                                        ?: 30
                                 )
                                 coroutineScope.launch {
                                     onSave(appointment)
@@ -908,4 +959,20 @@ fun AddAppointmentDialog(
             }
         }
     }
+    if (viewMap) {
+        Dialog(onDismissRequest = { viewMap = false }) {
+            FindAVet(OnNavigate = { locationDetails ->
+                location = location.copy(
+                    coords = locationDetails.coords,
+                    clinicName = locationDetails.clinicName, address = locationDetails.address
+                )
+                Log.d("Test", "location coords: ${location.coords}," +
+                        " address: ${location.clinicName}, name: ${location.clinicName}")
+                Log.d("Test", "locationDetails coords: ${locationDetails.coords}," +
+                        " address: ${locationDetails.clinicName}, name: ${locationDetails.clinicName}")
+                viewMap = false
+            })
+        }
+    }
+//    }
 }

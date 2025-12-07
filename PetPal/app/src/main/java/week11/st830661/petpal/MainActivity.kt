@@ -25,7 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import week11.st830661.petpal.ui.theme.PetPalTheme
 import week11.st830661.petpal.view.dashboard.DashboardScreen
-import week11.st830661.petpal.view.pets.PetsScreen
+import week11.st830661.petpal.viewmodel.PetsScreen
 import week11.st830661.petpal.viewmodel.HealthScreen
 import week11.st830661.petpal.view.reminder.RemindersScreen
 import week11.st830661.petpal.view.reminder.ReminderDetailScreen
@@ -47,6 +47,7 @@ import week11.st830661.petpal.viewmodel.PetsViewModelFactory
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import week11.st830661.petpal.utils.ReminderScheduler
+import week11.st830661.petpal.viewmodel.MedicalRecordViewModel
 
 class MainActivity : ComponentActivity() {
 

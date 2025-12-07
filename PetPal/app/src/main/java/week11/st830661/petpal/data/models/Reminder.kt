@@ -1,5 +1,7 @@
 package week11.st830661.petpal.data.models
 
+import com.google.android.gms.maps.model.LatLng
+import com.google.firebase.firestore.GeoPoint
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -54,7 +56,10 @@ data class Appointment(
     val title: String = "",
     val vetName: String = "",
     val clinicName: String = "",
-    val location: String = "",
+//    val location : String = "",
+    val locationName: String = "",
+    val locationAddress: String = "",
+    val locationCoords : GeoPoint = GeoPoint(0.0, 0.0),
     val dateTime: LocalDateTime = LocalDateTime.now(),
     val notes: String = "",
     val reminderSet: Boolean = false,
